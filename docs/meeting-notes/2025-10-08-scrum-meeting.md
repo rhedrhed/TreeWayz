@@ -1,9 +1,10 @@
 # 📝 Scrum Meeting Minutes
 
-**Meeting Type:** (Daily / Sprint Planning / Review / Retrospective / Other)
-**Date:**
+**Meeting Type:** 
+Review
+* **Date:**
 10/08/2025
-**Time:**
+* **Time:**
 2:50pm-3:10pm
 **Facilitator (Scrum Master):**
 Jarhed Zamudio
@@ -24,7 +25,7 @@ To review and finalize the 2nd prototype of the UI
 | ----- | --------------- |
 | Review of 2nd design prototype | Team had successfully reviewed it, to be presented to stakeholders              |
 | Review of Posting of User-stories      | To be recorded and posted                |
-|       |                 |
+| Designation of task (Database Schema)      |   Assigning work to a dev             |
 
 ---
 
@@ -42,6 +43,7 @@ To review and finalize the 2nd prototype of the UI
 | Task | Assigned To | Due Date | Status |
 | ---- | ----------- | -------- | ------ |
 | Present current outputs to stakeholder/s     |  Dev team           |10/12/2025          | Pending       |
+| Create the 1st prototype of the Database Schema    |  Dev Rayyan       |10/12/2025          | Pending       |
 
 ---
 
