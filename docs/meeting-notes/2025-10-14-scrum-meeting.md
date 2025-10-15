@@ -62,7 +62,7 @@ To review the fourth frontend prototype and the database schema diagram, provide
 ## 📅 6. Next Steps
 
 * **Next Meeting:**  
-10/19/2025  
+10/15/2025  
 * **Follow-up Items:**  
 Review progress on prototype 5 and database schema 2, and confirm readiness for sprint integration.  
 
