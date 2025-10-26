@@ -19,7 +19,7 @@ All team members and Stakeholder
 ## 🗂️ 1. Meeting Overview
 
 **Objective:**  
-To review the final set of deliverables — including the completed Figma design, architectural diagram, and Use Case UML — and to conduct a reflection discussion in preparation for the upcoming retrospective phase.  
+To review the final set of deliverables; including the completed Figma design, architectural diagram, and Use Case UML and to conduct a reflection discussion in preparation for the upcoming retrospective phase.  
 
 ---
 
@@ -48,7 +48,7 @@ To review the final set of deliverables — including the completed Figma design
 
 | Task | Assigned To | Due Date | Status |
 | ---- | ----------- | -------- | ------ |
-| Submit retrospective essay | All Dev Team Members | 10/22/2025 | Pending |
+| Submit retrospective essay | All Dev Team Members | 10/27/2025 | Pending |
 | Compile all approved deliverables for documentation submission | Dev Jarhed | 10/22/2025 | Pending |
 
 ---
@@ -66,7 +66,7 @@ To review the final set of deliverables — including the completed Figma design
 * **Next Meeting:**  
 10/22/2025  
 * **Follow-up Items:**  
-Confirm all retrospective essays are submitted and prepare for final sprint closure discussion.  
+Overview of retrospective essay template and prepare for final sprint closure discussion.  
 
 ---
 
