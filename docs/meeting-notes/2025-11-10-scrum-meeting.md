@@ -1,10 +1,15 @@
 # 📝 Scrum Meeting Minutes
 
-**Meeting Type:** Sprint Planning
-**Date:** 10th November 2025
-**Time:** 3:10pm - 3:30pm
-**Facilitator (Scrum Master):** Rayyan Khan
-**Attendees:** All team members
+**Meeting Type:** 
+Sprint Planning
+**Date:** 
+10th November 2025
+**Time:** 
+3:10pm - 3:30pm
+**Facilitator (Scrum Master):**
+Rayyan Khan
+**Attendees:**
+All team members
 
 ---
 
@@ -54,11 +59,15 @@ Plan sprint 2, assign roles, modify kanban board, align on architectural, UML, e
 
 ## 📅 7. Next Steps
 
-* **Next Meeting:** 11/11/2025
-* **Follow-up Items:** Each sub-team to present how they plan to complete the assigned work
+* **Next Meeting:**
+* 11/11/2025
+* **Follow-up Items:**
+* Each sub-team to present how they plan to complete the assigned work
 
 ---
 
-**Prepared by:** Rayyan Khan
-**Date Submitted:** 10/11/2025
+**Prepared by:**
+Rayyan Khan
+**Date Submitted:**
+10/11/2025
 
