@@ -1,15 +1,15 @@
 # 📝 Scrum Meeting Minutes
 
-**Meeting Type:** 
-Sprint Planning
-**Date:** 
-10th November 2025
-**Time:** 
-3:10pm - 3:30pm
-**Facilitator (Scrum Master):**
-Rayyan Khan
-**Attendees:**
-All team members
+**Meeting Type:**     
+Sprint Planning  
+**Date:**     
+10th November 2025  
+**Time:**   
+3:10pm - 3:30pm  
+**Facilitator (Scrum Master):**  
+Rayyan Khan  
+**Attendees:**  
+All team members  
 
 ---
 
@@ -34,9 +34,9 @@ Plan sprint 2, assign roles, modify kanban board, align on architectural, UML, e
 
 | Decision | Rationale / Notes |
 | -------- | ----------------- |
-|Dev Daniah and Dev Wasan will be assigned to Architectural Analysis          |  Will research various architectural styles to be discussed in the next meeting                 |
-| Dev Rayyan and Dev Jarhed         | Will refine the Class Diagram from Sprint 1 and design the Sequence and Component Diagrams                  |
-|Dev Omar          | Will draft the one-page ethical statement                  |
+|Dev Daniah and Dev Wasan will be assigned to Architectural Analysis          |  Will research and analyze various architectural styles and select the best architecture for the app while also mapping 1-2 design patterns to app features.                 |
+| Dev Rayyan and Dev Jarhed will be assigned to UML Design Creation        | Will refine the Class Diagram from Sprint 1 and design the Sequence and Component Diagrams                  |
+|Dev Omar will be assigned to Ethical Statement          | Will draft the one-page ethical statement                  |
 ---
 
 ## 🔧 4. Action Items
@@ -59,15 +59,15 @@ Plan sprint 2, assign roles, modify kanban board, align on architectural, UML, e
 
 ## 📅 7. Next Steps
 
-* **Next Meeting:**
-* 11/11/2025
-* **Follow-up Items:**
-* Each sub-team to present how they plan to complete the assigned work
+* **Next Meeting:**  
+* 11/11/2025  
+* **Follow-up Items:**  
+* Each sub-team to present how they plan to complete the assigned work  
 
 ---
 
-**Prepared by:**
-Rayyan Khan
-**Date Submitted:**
-10/11/2025
+**Prepared by:**  
+Rayyan Khan  
+**Date Submitted:**  
+10/11/2025  
 
