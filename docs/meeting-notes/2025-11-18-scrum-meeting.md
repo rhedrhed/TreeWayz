@@ -19,7 +19,7 @@ To follow up on previously assigned tasks and discuss project progression
 
 | Topic | Summary / Notes |
 | ----- | --------------- |
-| Architectural Analysis      |Dev Wasan and Dev Daniah modified decision matrix according to stakeholder needs and chose the best architectural style for the project                 |
+| Architectural Analysis      |Dev Wasan and Dev Daniah modified decision matrix according to stakeholder needs and chose the best architectural style for the project (Layered Architecture Style)                |
 | Ethical Statement       | Dev Omar completed documenting ethical statements based on "Privacy" and "Fairness" of the app                |
 
 ---
