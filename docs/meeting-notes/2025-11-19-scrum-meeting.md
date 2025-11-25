@@ -54,7 +54,7 @@ To follow up on previously assigned tasks and discuss project progression.
 
 ## 📅 7. Next Steps
 
-* **Next Meeting:** 24th November 2025  
+* **Next Meeting:** 23rd November 2025  
 * **Follow-up Items:** To check up on assigned tasks and consult the stakeholder if needed.  
 
 ---
