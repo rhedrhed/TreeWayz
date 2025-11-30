@@ -1,0 +1,117 @@
+{
+   "checksum": "3f8e8078b4efe7141ee10350afc1118a",
+   "roots": {
+      "bookmark_bar": {
+         "children": [ {
+            "date_added": "13339017450042139",
+            "date_last_used": "0",
+            "guid": "5b5a335e-0afa-47bf-bc9d-5d3b402bdc46",
+            "id": "10",
+            "name": "Sociology Book",
+            "show_icon": false,
+            "source": "sync",
+            "type": "url",
+            "url": "https://openstax.org/details/books/introduction-sociology-3e",
+            "visit_count": 0
+         }, {
+            "date_added": "13339017851894176",
+            "date_last_used": "0",
+            "guid": "fa7ecd1e-bf34-4ea7-990b-7a76202a7452",
+            "id": "11",
+            "name": "Sociology pdf",
+            "show_icon": false,
+            "source": "sync",
+            "type": "url",
+            "url": "https://assets.openstax.org/oscms-prodcms/media/documents/IntroductiontoSociology3e-WEB_9QTqRGQ.pdf?_gl=1*2st65x*_ga*MTA3MjM5NzU3OC4xNjk0NTQzODUy*_ga_T746F8B0QC*MTY5NDU0Mzg1MS4xLjEuMTY5NDU0NDIxMy42MC4wLjA.",
+            "visit_count": 0
+         }, {
+            "date_added": "13339160204768989",
+            "date_last_used": "0",
+            "guid": "bc0a23ac-0241-4735-bd41-41fd85c3d4e9",
+            "id": "12",
+            "name": "Kortext | My Library (COmputing Books)",
+            "show_icon": false,
+            "source": "sync",
+            "type": "url",
+            "url": "https://read.kortext.com/library/books",
+            "visit_count": 0
+         }, {
+            "date_added": "13408891758104129",
+            "date_last_used": "0",
+            "guid": "6f73b33b-f874-48c6-bf82-30366bfcf0a2",
+            "id": "8",
+            "name": "Lenovo Support",
+            "show_icon": false,
+            "source": "oem_preload",
+            "type": "url",
+            "url": "https://support.lenovo.com/",
+            "visit_count": 0
+         }, {
+            "date_added": "13408891758103986",
+            "date_last_used": "0",
+            "guid": "59e48f3a-e0f0-4f14-8d68-afa2f07f4886",
+            "id": "7",
+            "name": "Lenovo",
+            "show_icon": false,
+            "source": "oem_preload",
+            "type": "url",
+            "url": "https://www.lenovo.com/",
+            "visit_count": 0
+         }, {
+            "date_added": "13408891758103574",
+            "date_last_used": "0",
+            "guid": "8daa3b15-bb99-45e9-bb94-5b392a99a6af",
+            "id": "6",
+            "name": "McAfee",
+            "show_icon": false,
+            "source": "oem_preload",
+            "type": "url",
+            "url": "https://www.mcafee.com/consumer/v/browserfav/lenovo.html",
+            "visit_count": 0
+         } ],
+         "date_added": "13408891757677397",
+         "date_last_used": "0",
+         "date_modified": "13408891758104129",
+         "guid": "0bc5d13f-2cba-5d74-951f-3f233fe6c908",
+         "id": "1",
+         "name": "Favorites bar",
+         "source": "unknown",
+         "type": "folder"
+      },
+      "other": {
+         "children": [ {
+            "date_added": "13346687448477576",
+            "date_last_used": "0",
+            "guid": "a0c04c33-8ba5-4891-8194-6c4ce573f208",
+            "id": "9",
+            "name": "Fall 2023 SOCI 101 Week 3-2.pdf.pdf: Introduction to Sociology",
+            "show_icon": false,
+            "source": "sync",
+            "type": "url",
+            "url": "https://canvas.aubh.edu.bh/courses/1250/files/170191?module_item_id=37490",
+            "visit_count": 0
+         } ],
+         "date_added": "13408891757677397",
+         "date_last_used": "0",
+         "date_modified": "13346687448477576",
+         "guid": "82b081ec-3dd3-529c-8475-ab6c344590dd",
+         "id": "2",
+         "name": "Other favorites",
+         "source": "unknown",
+         "type": "folder"
+      },
+      "synced": {
+         "children": [  ],
+         "date_added": "13408891757677397",
+         "date_last_used": "0",
+         "date_modified": "0",
+         "guid": "4cf2e351-0e85-532b-bb37-df045d8f8d0f",
+         "id": "3",
+         "name": "Mobile favorites",
+         "source": "unknown",
+         "type": "folder"
+      }
+   },
+   "sync_metadata": "CkEKHgiIgQISCG0JgM+aAQAAKg4QABgBIAAoBjAAOABAABIAKhhyVGl2RjlOQWVyZG5QSTEvak84Zm9RPT1IA6AGDBKsAQgLEqcBChxuTDVOOHFsMC9UdFV1WkVuQjRTZ2ZvT3JlTnM9EiRmYTdlY2QxZS1iZjM0LTRlYTctOTkwYi03YTc2MjAyYTc0NTIYACAAKAAw89vO/MUxOLHfzvzFMUCx3878xTFKHE5QdlJDekY4Mk1GSmdSbkJtcjlVM0JlNWdEST1aHiIcQXozQVZWYkJ0R1FmV2lYV3RoaUd2R3drNUdNPWUAAAAAwj4CYAUSrQEIDBKoAQocSlJITXVtU0JsR0VoRE9UY0hvS2hWVFlZWDdzPRIkYmMwYTIzYWMtMDI0MS00NzM1LWJkNDEtNDFmZDg1YzNkNGU5GAAgACgAMNHb6uXTMTiJ3878xTFAid/O/MUxShw3YXY5ZDhzTWxqOEhRZlFJYjRsdzdhOGJwNkk9Wh8iHaA3WHVYMTJFbWlzTG80ZldXTVJpbzJldHkvZ0k9ZZhtJaLCPgJgBRKOAQgBEokBChx5eEovNmZ2a2VjcjdrcDVFUXpCNHRXTHBkYkU9EiQxYTU3MzJiMy1kMmFjLTVkODQtOGUwZS1kOTVlN2QxMjZkZWMYACAAKAAwz9fSiaguOIrAhuvtL0CKwIbr7S9KHGFSQ1dMZ2hGOWI1SW5xS0lEdnVKL2p2UWtGYz1aAGUAAAAAwj4CYAASjgEIAhKJAQocWWNTVG9udkVTUHdxQ3M0TDJjclZodjY4TDk4PRIkNmMyZjNiNTUtYjI5NC01MmQ5LTgwZGUtYTc1NTk2NTAyMTVjGAAgACgAMNDX0omoLjiZwIbr7S9AmcCG6+0vShxvUFZraHdCUmJWNjVLQ1dSMitJT05IV29PdTg9WgBlAAAAAMI+AmAAEqwBCAoSpwEKHGtJaWRNTW5WN0FiUVcxbjlDRWliU1IwY0FmWT0SJDViNWEzMzVlLTBhZmEtNDdiZi1iYzlkLTVkM2I0MDJiZGM0NhgAIAAoADDQ2+rl0zE4697O/MUxQOvezvzFMUocWGdacExPNUk5ZGJYWDFVNHJ1WW02R0drdHM4PVoeIhw2eEptN211VG91Q2k5OHVwSVdBVjgxVU1sd1k9ZbLnAVbCPgJgBRKsAQgJEqcBChw2enpDNWhVeDhyeE55M3J0UC9qaGZKd04zNG89EiRhMGMwNGMzMy04YmE1LTQ4OTEtODE5NC02YzRjZTU3M2YyMDgYACAAKAAw0tvq5dMxOM/fzvzFMUDP3878xTFKHGYzMnlOK2dCVXI0K1NJRjVpL3ZFTDgvR3BMcz1aHiIcZkFmb2QrQmd1US9MRm82LzMvQ3BTK21xa1N3PWUlbYp+wj4CYAUSjgEIAxKJAQocbmpnRHU4OGVDcnZYcDg2cEQ3ZkhHY3FGcDg4PRIkZGZmMzcyNGMtNzFjNS01NTQ3LWFjODctM2FjYWZlZDY3ZmU5GAAgACgAMNTX0omoLjjZwIbr7S9A2cCG6+0vShx5ek5CMDFjbjU0QTdjUlUwdVQrL1BnbVR0VW89WgBlAAAAAMI+AmAAMAA4AA==",
+   "version": 1
+}
