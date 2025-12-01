@@ -4,10 +4,12 @@ import { authenticateToken } from "../middleware/jwtauth.js";
 
 const router = express.Router();
 
+//Load home page info (user details + ongoing ride)
 router.get("/home", authenticateToken, async (req, res) => {
   try {
     const userId = req.user.user_id;
 
+    //Get user info
     const userQuery = `
       SELECT first_name, last_name, phone AS contact, rider_rating, driver_rating
       FROM Users
@@ -15,12 +17,14 @@ router.get("/home", authenticateToken, async (req, res) => {
     `;
     const userResult = await pool.query(userQuery, [userId]);
 
+    //Get ongoing ride for driver or rider
     const rideQuery = `
       SELECT ride_id, origin, destination, status, departure_time
       FROM Rides
-      WHERE (driver_id = $1 AND status = 'open')
+      WHERE (driver_id = $1 AND status IN ('open','ongoing','booked'))
          OR ride_id IN (
-              SELECT ride_id FROM Bookings WHERE rider_id = $1 AND status = 'booked'
+              SELECT ride_id FROM Bookings 
+              WHERE rider_id = $1 AND status IN ('pending','accepted')
             )
       LIMIT 1
     `;
