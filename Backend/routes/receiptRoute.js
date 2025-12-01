@@ -1,7 +1,7 @@
 import express from "express";
 import pool from "../config/pgsql.js";
-import { authenticateToken } from "../middlewares/authMiddleware.js";
-import PDFDocument from "pdfkit"; // npm i pdfkit
+import { authenticateToken } from "../middleware/jwtauth.js";
+import PDFDocument from "pdfkit";
 
 const router = express.Router();
 
