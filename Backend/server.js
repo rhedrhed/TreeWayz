@@ -3,7 +3,8 @@ import dotenv from "dotenv";
 import pool from "./config/pgsql.js";
 import authRoutes from "./routes/authroutes.js";
 import homeRoutes from "./routes/homeroute.js";
-import receiptsRoute from "./routes/receiptsRoute.js";
+import receiptsRoute from "./routes/receiptRoute.js";
+import rideRoutes from "./routes/rideRoute.js";
 
 dotenv.config();
 const app = express();
@@ -27,9 +28,10 @@ app.get("/test", async (req, res) => {
 });
 
 // Routes
-app.use("/auth", authRoutes);
+app.use("/", authRoutes);
 app.use("/", homeRoutes);
 app.use("/", receiptsRoute);
+app.use("/rides", rideRoutes);
 
 // Start server
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
