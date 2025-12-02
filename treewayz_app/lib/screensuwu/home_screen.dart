@@ -17,7 +17,7 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
 
   Map<String, dynamic>? userData;
-  String ongoingStatus = "Loading...";
+  String ongoingStatus = "uwu";
 
   @override
   void initState() {
@@ -100,11 +100,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   alignment: Alignment.centerLeft,
                   child: Text(
                     "Ongoing:",
-                    style: TextStyle(
-                      fontSize: 18,
-                      color: Colors.green[900],
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: AppText.subheading
                   ),
                 ),
 
@@ -114,15 +110,12 @@ class _HomeScreenState extends State<HomeScreen> {
                   width: double.infinity,
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
-                    color: Colors.grey.shade100,
+                    color: AppColors.lightGrey,
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
                     ongoingStatus,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      color: Colors.black87,
-                    ),
+                     style: AppText.text
                   ),
                 ),
               ],
@@ -150,26 +143,26 @@ class _HomeScreenState extends State<HomeScreen> {
           // GREEN HEADER
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.all(10),
+             padding: const EdgeInsets.symmetric(vertical: 5, horizontal: 20),
             decoration: const BoxDecoration(
-              color: Color(0xFF1D6B3C),
+              color: AppColors.darkGreen,
               borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
             ),
             child: const Center(
               child: Column(
                 children: [
                   Text(
-                    "HELLO",
+                    "H E L L O",
                     style: TextStyle(
                       color: Colors.white,
-                      fontSize: 20,
+                      fontSize: 24,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
                   Text(
                     "my name is",
                     style: TextStyle(
-                      color: Colors.white70,
+                      color: Colors.white,
                       fontSize: 14,
                     ),
                   ),
@@ -183,9 +176,7 @@ class _HomeScreenState extends State<HomeScreen> {
             padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 20),
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius:
-                  const BorderRadius.vertical(bottom: Radius.circular(12)),
-              border: Border.all(color: Colors.green, width: 1),
+              border: Border.all(color: AppColors.lightGrey, width: 1),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -216,6 +207,16 @@ class _HomeScreenState extends State<HomeScreen> {
                 // Contact number
                 Text("Contact No: +$phone"),
               ],
+            ),
+          ),
+
+          // PLAIN GREEN FOOTER
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(vertical: 5, horizontal: 20),
+            decoration: BoxDecoration(
+              color: AppColors.darkGreen,
+              borderRadius: BorderRadius.vertical(bottom: Radius.circular(12)),
             ),
           ),
         ],
