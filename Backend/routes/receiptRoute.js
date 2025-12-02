@@ -76,7 +76,9 @@ router.get("/api/receipts/:booking_id/invoice", authenticateToken, async (req, r
       JOIN Payments p ON b.booking_id = p.booking_id
       JOIN Users d ON r.driver_id = d.user_id
       JOIN Users u ON b.rider_id = u.user_id
-      WHERE b.booking_id = $1 AND (b.rider_id = $2 OR r.driver_id = $2)
+      WHERE b.booking_id = $1 
+        AND (b.rider_id = $2 OR r.driver_id = $2)
+        AND r.status = 'done'
     `;
 
     const result = await pool.query(query, [booking_id, userId]);
