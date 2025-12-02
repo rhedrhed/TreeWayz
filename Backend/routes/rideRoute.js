@@ -214,11 +214,15 @@ router.get("/searchNearbyRides", authenticateToken, async (req, res) => {
 
         const values = [lat, lng, seats_needed];
         let paymentFilter = "";
+        let radiusParam = "$4";
 
         if (payment_method) {
             paymentFilter = "AND r.payment_method = $4";
+            radiusParam = "$5";
             values.push(payment_method);
         }
+
+        values.push(radius); // Add radius as parameterized value
 
         const query = `
             SELECT * FROM (
@@ -236,7 +240,7 @@ router.get("/searchNearbyRides", authenticateToken, async (req, res) => {
                   AND r.origin_lng IS NOT NULL
                   ${paymentFilter}
             ) AS sub
-            WHERE distance_km <= ${radius}
+            WHERE distance_km <= ${radiusParam}
             ORDER BY distance_km ASC;
         `;
 
@@ -259,7 +263,7 @@ router.get("/myRide", authenticateToken, async (req, res) => {
         const driverId = req.user.user_id;
 
         const result = await pool.query(
-            `SELECT * FROM Rides WHERE driver_id=$1 AND status='open' ORDER BY created_at DESC LIMIT 1`,
+            `SELECT * FROM Rides WHERE driver_id=$1 AND status IN ('open','booked','ongoing') ORDER BY created_at DESC LIMIT 1`,
             [driverId]
         );
 
@@ -415,7 +419,18 @@ router.patch("/acceptRequest/:bookingId", authenticateToken, async (req, res) =>
         if (updatedRideRes.rows[0].available_seats <= 0) {
             await client.query(`UPDATE Rides SET status='booked' WHERE ride_id=$1`, [booking.ride_id]);
         }
+        // Get ride price and payment method
+        const rideInfo = await client.query(
+            `SELECT price, payment_method FROM Rides WHERE ride_id=$1`,
+            [booking.ride_id]
+        );
 
+        const totalPayment = rideInfo.rows[0].price * booking.seats;
+        await client.query(
+            `INSERT INTO Payments (booking_id, amount, method)
+     VALUES ($1, $2, $3)`,
+            [bookingId, totalPayment, rideInfo.rows[0].payment_method]
+        );
         await client.query('COMMIT');
         res.json({ success: true, message: "Rider accepted." });
     } catch (error) {
@@ -500,10 +515,38 @@ router.post("/rateRider/:rideId", authenticateToken, async (req, res) => {
         if (rideRes.rows[0].driver_id !== driverId)
             return res.status(403).json({ success: false, message: "You cannot rate riders for this ride." });
 
+        // Check for duplicate rating
+        const existingRating = await pool.query(
+            `SELECT * FROM Ratings 
+             WHERE ride_id=$1 AND reviewer_id=$2 AND reviewee_id=$3 AND rating_type='driver_to_rider'`,
+            [rideId, driverId, rider_id]
+        );
+
+        if (existingRating.rows.length > 0) {
+            return res.status(400).json({
+                success: false,
+                message: "You have already rated this rider for this ride."
+            });
+        }
+
+        // Insert rating
         await pool.query(
             `INSERT INTO Ratings (ride_id, reviewer_id, reviewee_id, score, rating_type)
              VALUES ($1, $2, $3, $4, 'driver_to_rider')`,
             [rideId, driverId, rider_id, score]
+        );
+
+        // Update rider average rating
+        const avgRes = await pool.query(
+            `SELECT AVG(score)::numeric(2,1) AS avg_rating
+             FROM Ratings
+             WHERE reviewee_id=$1 AND rating_type='driver_to_rider'`,
+            [rider_id]
+        );
+
+        await pool.query(
+            `UPDATE Users SET rider_rating=$1 WHERE user_id=$2`,
+            [avgRes.rows[0].avg_rating, rider_id]
         );
 
         res.json({ success: true, message: "Rider rated successfully." });
@@ -513,7 +556,6 @@ router.post("/rateRider/:rideId", authenticateToken, async (req, res) => {
     }
 });
 
-//Rider rates driver
 router.post("/rateDriver/:rideId", authenticateToken, async (req, res) => {
     try {
         const riderId = req.user.user_id;
@@ -533,10 +575,38 @@ router.post("/rateDriver/:rideId", authenticateToken, async (req, res) => {
         const driverRes = await pool.query(`SELECT driver_id FROM Rides WHERE ride_id=$1`, [rideId]);
         if (!driverRes.rows.length) return res.status(404).json({ success: false, message: "Ride not found." });
 
+        // Check for duplicate rating
+        const existingRating = await pool.query(
+            `SELECT * FROM Ratings 
+             WHERE ride_id=$1 AND reviewer_id=$2 AND reviewee_id=$3 AND rating_type='rider_to_driver'`,
+            [rideId, riderId, driverRes.rows[0].driver_id]
+        );
+
+        if (existingRating.rows.length > 0) {
+            return res.status(400).json({
+                success: false,
+                message: "You have already rated this driver for this ride."
+            });
+        }
+
+        // Insert rating
         await pool.query(
             `INSERT INTO Ratings (ride_id, reviewer_id, reviewee_id, score, rating_type)
              VALUES ($1, $2, $3, $4, 'rider_to_driver')`,
             [rideId, riderId, driverRes.rows[0].driver_id, score]
+        );
+
+        // Update driver average rating
+        const avgRes = await pool.query(
+            `SELECT AVG(score)::numeric(2,1) AS avg_rating
+             FROM Ratings
+             WHERE reviewee_id=$1 AND rating_type='rider_to_driver'`,
+            [driverRes.rows[0].driver_id]
+        );
+
+        await pool.query(
+            `UPDATE Users SET driver_rating=$1 WHERE user_id=$2`,
+            [avgRes.rows[0].avg_rating, driverRes.rows[0].driver_id]
         );
 
         res.json({ success: true, message: "Driver rated successfully." });
@@ -548,4 +618,3 @@ router.post("/rateDriver/:rideId", authenticateToken, async (req, res) => {
 
 
 export default router;
-
