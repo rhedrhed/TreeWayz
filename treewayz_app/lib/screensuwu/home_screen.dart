@@ -5,7 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../screensuwu/signin_screen.dart';
 import '../themeuwu/app_text.dart';
 import '../themeuwu/app_colors.dart';
-import '../screensuwu/profile_screen.dart'; // added import
+import '../screensuwu/logout_screen.dart'; // added import
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -54,14 +54,14 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return WillPopScope(
-      onWillPop: () async {
-        // When the user presses the Android back button, navigate to ProfileScreen
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (bool didPop, dynamic result) {
+        if (didPop) return;
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => const ProfileScreen()),
+          MaterialPageRoute(builder: (context) => const LogoutScreen()),
         );
-        return false; // prevent default pop
       },
       child: Scaffold(
         backgroundColor: Colors.white,

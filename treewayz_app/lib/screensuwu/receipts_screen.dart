@@ -1,13 +1,23 @@
 import 'package:flutter/material.dart';
 import '../widgetsuwu/bottom_nav.dart';
-import '../screensuwu/ratedriver_screen.dart';
+import '../screensuwu/raterider_screen.dart';
+import '../screensuwu/logout_screen.dart';
 
 class ReceiptsScreen extends StatelessWidget {
   const ReceiptsScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (bool didPop, dynamic result) {
+        if (didPop) return;
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const LogoutScreen()),
+        );
+      },
+      child: Scaffold(
       bottomNavigationBar: const BottomNav(index: 2),
 body: Center(
   child: Column(
@@ -16,17 +26,18 @@ body: Center(
       Text("Receipts",
           style: TextStyle(fontSize: 26, color: Colors.green[800])),
       const SizedBox(height: 20),
-      ElevatedButton(
+      /*ElevatedButton(
         onPressed: () => Navigator.push(
           context,
-          MaterialPageRoute(builder: (context) => const RateDriverScreen()),
+          MaterialPageRoute(builder: (context) => const RateRiderScreen()),
         ),
         child: const Text('Rate Driver'),
-      ),
+      ), */
     ],
   ),
 ),
       
+    )
     );
   }
 }

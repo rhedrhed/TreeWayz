@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'welcome_screen.dart';
 import 'profile_screen.dart';
+import 'home_screen.dart';
 import '../../themeuwu/app_text.dart';
 import '../../themeuwu/app_colors.dart';
 
@@ -17,7 +18,16 @@ class LogoutScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (bool didPop, dynamic result) {
+        if (didPop) return;
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const WelcomeScreen()),
+        );
+      },
+      child: Scaffold(
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -51,7 +61,7 @@ class LogoutScreen extends StatelessWidget {
               ),
               onPressed: () {
                 Navigator.push(context,
-                    MaterialPageRoute(builder: (_) => const ProfileScreen()));
+                    MaterialPageRoute(builder: (_) => const HomeScreen()));
               },
               child: const 
               Text(
@@ -62,6 +72,7 @@ class LogoutScreen extends StatelessWidget {
           ],
         ),
       ),
+    )
     );
   }
 }

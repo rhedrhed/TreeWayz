@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../servicesuwu/api.dart';
 import '../screensuwu/loading_screen.dart';
 import '../screensuwu/signin_screen.dart';
+import '../screensuwu/welcome_screen.dart';
 import '../themeuwu/app_text.dart';
 import '../themeuwu/app_colors.dart';
 
@@ -263,7 +264,16 @@ class _SignupScreenState extends State<SignupScreen> {
     bool emailHasAt = email.text.contains('@');
     bool disableButton = loading || fieldsEmpty || emailHasAt;
 
-    return Scaffold(
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (bool didPop, dynamic result) {
+        if (didPop) return;
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const WelcomeScreen()),
+        );
+      },
+      child: Scaffold(
       backgroundColor: AppColors.white,
       appBar: AppBar(backgroundColor: AppColors.white, elevation: 0),
       body: SingleChildScrollView(
@@ -426,6 +436,7 @@ class _SignupScreenState extends State<SignupScreen> {
           ),
         ),
       ),
+    )
     );
   }
 }

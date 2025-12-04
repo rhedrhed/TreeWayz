@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import '../widgetsuwu/bottom_nav.dart';
 import '../themeuwu/app_text.dart';
 import '../themeuwu/app_colors.dart';
 import '../screensuwu/home_screen.dart';
+import '../screensuwu/logout_screen.dart';
 import 'drivedetails_screen.dart';
 
 class DriveConfirmScreen extends StatefulWidget {
@@ -30,9 +30,22 @@ class DriveConfirmScreen extends StatefulWidget {
 class _DriveDetailsScreenState extends State<DriveConfirmScreen> {
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (bool didPop, dynamic result) {
+        if (didPop) return;
+        // Go back to DriveDetailsScreen for editing
+        if (Navigator.canPop(context)) {
+          Navigator.pop(context);
+        } else {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => const DriveDetailsScreen()),
+          );
+        }
+      },
+      child: Scaffold(
       backgroundColor: AppColors.white,
-      bottomNavigationBar: const BottomNav(index: 1),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(20),
@@ -76,7 +89,16 @@ class _DriveDetailsScreenState extends State<DriveConfirmScreen> {
                     onPressed: () {
                       Navigator.pushReplacement(
                         context,
-                        MaterialPageRoute(builder: (_) => const DriveDetailsScreen()),
+                        MaterialPageRoute(
+                          builder: (_) => DriveDetailsScreen(
+                            initialPickupPoint: widget.pickupPoint,
+                            initialDestination: widget.destination,
+                            initialHour: widget.hour,
+                            initialMinute: widget.minute,
+                            initialAmPm: widget.amPm,
+                            initialSeats: widget.seats,
+                          ),
+                        ),
                       );
                     },
                     child: const Text("Edit Details", style: TextStyle(color: Colors.white)),
@@ -101,6 +123,7 @@ class _DriveDetailsScreenState extends State<DriveConfirmScreen> {
           ),
         ),
       ),
+    )
     );
   }
 }

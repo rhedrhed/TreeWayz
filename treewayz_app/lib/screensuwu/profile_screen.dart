@@ -18,7 +18,16 @@ class ProfileScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (bool didPop, dynamic result) {
+        if (didPop) return;
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const LogoutScreen()),
+        );
+      },
+      child: Scaffold(
       bottomNavigationBar: const BottomNav(index: 3),
       body: Center(
         child: Column(
@@ -46,6 +55,7 @@ class ProfileScreen extends StatelessWidget {
           ],
         ),
       ),
+    )
     );
   }
 }

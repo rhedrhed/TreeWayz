@@ -3,6 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../servicesuwu/api.dart';
 import '../screensuwu/home_screen.dart';
 import '../screensuwu/signin_screen.dart';
+import '../screensuwu/logout_screen.dart';
 
 class LoadingScreen extends StatefulWidget {
   const LoadingScreen({super.key});
@@ -55,7 +56,22 @@ class _LoadingScreenState extends State<LoadingScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (bool didPop, dynamic result) {
+        if (didPop) return;
+        // If there's a previous page in the stack, go back normally
+        if (Navigator.canPop(context)) {
+          Navigator.pop(context);
+        } else {
+          // No previous page (or came from auth), go to logout
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => const LogoutScreen()),
+          );
+        }
+      },
+      child: const Scaffold(
       backgroundColor: Colors.white,
       body: Center(
         child: Column(
@@ -86,6 +102,7 @@ class _LoadingScreenState extends State<LoadingScreen> {
           ],
         ),
       ),
+    )
     );
   }
 }

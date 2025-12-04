@@ -4,6 +4,7 @@ import '../servicesuwu/api.dart';
 import '../screensuwu/loading_screen.dart';
 import '../screensuwu/signup_screen.dart';
 import '../screensuwu/home_screen.dart';
+import '../screensuwu/welcome_screen.dart';
 import '../themeuwu/app_text.dart';
 import '../themeuwu/app_colors.dart';
 
@@ -154,7 +155,16 @@ class _SigninScreenState extends State<SigninScreen> {
   Widget build(BuildContext context) {
     final isFormFilled = email.text.trim().isNotEmpty && password.text.trim().isNotEmpty;
 
-    return Scaffold(
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (bool didPop, dynamic result) {
+        if (didPop) return;
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const WelcomeScreen()),
+        );
+      },
+      child: Scaffold(
       backgroundColor: AppColors.white,
       appBar: AppBar(backgroundColor: AppColors.white, elevation: 0),
       body: SingleChildScrollView(
@@ -281,6 +291,7 @@ class _SigninScreenState extends State<SigninScreen> {
           child: const Text("Not a member? Click here to sign up<3", style: AppText.small),
         ),
       ),
+    )
     );
   }
 }

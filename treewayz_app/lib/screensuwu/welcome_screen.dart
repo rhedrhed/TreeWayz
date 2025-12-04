@@ -8,7 +8,16 @@ class WelcomeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (bool didPop, dynamic result) {
+        if (didPop) return;
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const WelcomeScreen()),
+        );
+      },
+      child: Scaffold(
       backgroundColor: Colors.white,
       body: Center(
         child: Column(
@@ -46,6 +55,7 @@ class WelcomeScreen extends StatelessWidget {
           ],
         ),
       ),
+    )
     );
   }
 }

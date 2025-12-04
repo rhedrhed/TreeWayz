@@ -5,27 +5,27 @@ import '../themeuwu/app_colors.dart';
 import '../screensuwu/home_screen.dart';
 import '../screensuwu/logout_screen.dart';
 
-class RateDriverScreen extends StatefulWidget {
-  const RateDriverScreen({super.key});
+class RateRiderScreen extends StatefulWidget {
+  const RateRiderScreen({super.key});
 
   @override
-  State<RateDriverScreen> createState() => _RateDriverScreenState();
+  State<RateRiderScreen> createState() => _RateRiderScreenState();
 }
 
-class _RateDriverScreenState extends State<RateDriverScreen> {
-  Map<String, dynamic>? driverData;
+class _RateRiderScreenState extends State<RateRiderScreen> {
+  Map<String, dynamic>? riderData;
   List<bool> starStates = [false, false, false, false, false];
   int rating = 0;
 
   @override
   void initState() {
     super.initState();
-    _loadDriverInfo();
+    _loadRiderInfo();
   }
 
-  Future<void> _loadDriverInfo() async {
-    final res = await Api.get("/driver/me");
-    if (mounted) setState(() => driverData = res);
+  Future<void> _loadRiderInfo() async {
+    final res = await Api.get("/rider/me");
+    if (mounted) setState(() => riderData = res);
   }
 
   void _toggleStar(int index) {
@@ -38,7 +38,7 @@ class _RateDriverScreenState extends State<RateDriverScreen> {
   Future<void> _submitRating() async {
     // Temporarily just navigate to HomeScreen
     // TODO: Implement API call to submit rating
-    // await Api.post("/driver/rate", body: {"rating": rating});
+    // await Api.post("/rider/rate", body: {"rating": rating});
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(builder: (context) => const HomeScreen()),
@@ -73,14 +73,14 @@ class _RateDriverScreenState extends State<RateDriverScreen> {
               ),
               const SizedBox(height: 20),
 
-              // DRIVER INFO CARD
-              _buildDriverCard(),
+              // RIDER INFO CARD
+              _buildRiderCard(),
 
               const SizedBox(height: 30),
 
               // RATING SECTION
               Text(
-                "Rate the Driver:",
+                "Rate the Rider:",
                 style: AppText.subheading,
               ),
               const SizedBox(height: 10),
@@ -122,11 +122,11 @@ class _RateDriverScreenState extends State<RateDriverScreen> {
     );
   }
 
-  Widget _buildDriverCard() {
-    final first = driverData?["firstName"] ?? "uwu";
-    final last = driverData?["lastName"] ?? "uwu";
-    final driverRating = driverData?["driverRating"];
-    final phone = driverData?["phone"] ?? "uwu";
+  Widget _buildRiderCard() {
+    final first = riderData?["firstName"] ?? "uwu";
+    final last = riderData?["lastName"] ?? "uwu";
+    final riderRating = riderData?["riderRating"];
+    final phone = riderData?["phone"] ?? "uwu";
 
     return Container(
       width: double.infinity,
@@ -191,8 +191,8 @@ class _RateDriverScreenState extends State<RateDriverScreen> {
 
                 const SizedBox(height: 10),
 
-                // Driver Rating
-                Text("Driver Rating: ${_stars(driverRating is int ? driverRating : null)}"),
+                // Rider Rating
+                Text("Rider Rating: ${_stars(riderRating is int ? riderRating : null)}"),
 
                 const SizedBox(height: 10),
 

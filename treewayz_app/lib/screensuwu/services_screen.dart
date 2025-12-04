@@ -4,13 +4,23 @@ import 'drivedetails_screen.dart';
 import '../widgetsuwu/bottom_nav.dart';
 import '../themeuwu/app_text.dart';
 import '../themeuwu/app_colors.dart';
+import '../screensuwu/logout_screen.dart';
 
 class ServicesScreen extends StatelessWidget {
   const ServicesScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (bool didPop, dynamic result) {
+        if (didPop) return;
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const LogoutScreen()),
+        );
+      },
+      child: Scaffold(
       backgroundColor: Colors.white,
       bottomNavigationBar: const BottomNav(index: 1),
       body: Center(
@@ -57,6 +67,7 @@ class ServicesScreen extends StatelessWidget {
           ],
         ),
       ),
+    )
     );
   }
 }

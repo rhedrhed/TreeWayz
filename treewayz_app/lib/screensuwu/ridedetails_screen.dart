@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import '../widgetsuwu/bottom_nav.dart';
 import '../themeuwu/app_text.dart';
 import '../themeuwu/app_colors.dart';
-import '../screensuwu/home_screen.dart';
+import '../screensuwu/logout_screen.dart';
+import '../screensuwu/rideselection_screen.dart';
 
 class RideDetailsScreen extends StatefulWidget {
   const RideDetailsScreen({super.key});
@@ -27,13 +27,17 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
   List<String> get pickupOptions => (destination != null && setB.contains(destination)) ? setA : setA + setB;
 
   // Destination options: if pickup is setB, only setA; else if pickup is setA, both; else empty
+  // Also exclude the pickup point from destination options
   List<String> get destinationOptions {
     if (pickupPoint == null) return [];
+    List<String> options;
     if (setB.contains(pickupPoint)) {
-      return setA; // Only setA
+      options = setA; // Only setA
     } else {
-      return setA + setB; // Both
+      options = setA + setB; // Both
     }
+    // Remove the pickup point from destination options
+    return options.where((location) => location != pickupPoint).toList();
   }
 
   final List<String> seatsOptions = List.generate(8, (i) => (i + 1).toString());
@@ -47,9 +51,23 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (bool didPop, dynamic result) {
+        if (didPop) return;
+        // If there's a previous page in the stack, go back normally
+        if (Navigator.canPop(context)) {
+          Navigator.pop(context);
+        } else {
+          // No previous page (or came from auth), go to logout
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => const LogoutScreen()),
+          );
+        }
+      },
+      child: Scaffold(
       backgroundColor: AppColors.white,
-      bottomNavigationBar: const BottomNav(index: 1),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(20),
@@ -76,8 +94,8 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
                 onChanged: (String? newValue) {
                   setState(() {
                     pickupPoint = newValue;
-                    // Reset destination if it's no longer valid
-                    if (destination != null && !destinationOptions.contains(destination)) {
+                    // Reset destination if it's the same as pickup or no longer valid
+                    if (destination != null && (destination == pickupPoint || !destinationOptions.contains(destination))) {
                       destination = null;
                     }
                   });
@@ -155,7 +173,7 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
                 onPressed: isFormValid ? () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (_) => const HomeScreen()),
+                    MaterialPageRoute(builder: (_) => const RideSelectionScreen()),
                   );
                 } : null,
                 child: const Text("Request Ride", style: AppText.button),
@@ -164,6 +182,7 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
           ),
         ),
       ),
+    )
     );
   }
 }
