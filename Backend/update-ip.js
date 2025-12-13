@@ -1,9 +1,6 @@
 #!/usr/bin/env node
 
-/**
- * Auto-detect local IP address and update Flutter API configuration
- * Run this script whenever your network changes
- */
+
 
 import { networkInterfaces } from 'os';
 import { readFileSync, writeFileSync } from 'fs';
