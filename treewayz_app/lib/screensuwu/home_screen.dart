@@ -6,6 +6,8 @@ import '../screensuwu/signin_screen.dart';
 import '../themeuwu/app_text.dart';
 import '../themeuwu/app_colors.dart';
 import '../screensuwu/logout_screen.dart'; // added import
+import '../screensuwu/driver_ride_management_screen.dart';
+import '../screensuwu/ratedriver_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -14,32 +16,110 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
-
+class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   Map<String, dynamic>? userData;
-  String ongoingStatus = "uwu";
+  String ongoingStatus = "Loading...";
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _loadUserInfo();
     _loadActiveRide();
   }
 
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      // Reload data when app comes back to foreground
+      _loadUserInfo();
+      _loadActiveRide();
+    }
+  }
+
   Future<void> _loadUserInfo() async {
-    final res = await Api.get("/user/me");
-    if (mounted) setState(() => userData = res);
+    final res = await Api.get("/home");
+
+    if (res != null && res["success"] == true) {
+      if (mounted) {
+        setState(() {
+          userData = res["user"];
+        });
+      }
+    }
   }
 
   Future<void> _loadActiveRide() async {
-    final res = await Api.get("/rides/active");
+    final res = await Api.get("/home");
 
-    if (res == null || res["active"] == false) {
-      if (mounted) setState(() => ongoingStatus = "No active rides.");
+    if (res == null) {
+      if (mounted) {
+        setState(() => ongoingStatus = "No active rides.");
+      }
       return;
     }
 
-    if (mounted) setState(() => ongoingStatus = res["status"]);
+    // Check if rider needs to rate a completed ride
+    if (res["needs_rating"] != null) {
+      final rideData = res["needs_rating"];
+      final rideId = rideData["ride_id"].toString(); // Convert to String
+      final driverId = rideData["driver_id"].toString(); // Convert to String
+      final driverFirstName = rideData["first_name"] ?? "";
+      final driverLastName = rideData["last_name"] ?? "";
+      final driverPhone = rideData["phone"] ?? "";
+
+      // Navigate to rating screen
+      if (mounted) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => RateDriverScreen(
+              rideId: rideId,
+              driverId: driverId,
+              driverFirstName: driverFirstName,
+              driverLastName: driverLastName,
+              driverPhone: driverPhone,
+            ),
+          ),
+        );
+      }
+      return;
+    }
+
+    if (res["ongoing_ride"] == null) {
+      if (mounted) {
+        setState(() => ongoingStatus = "No active rides.");
+      }
+      return;
+    }
+
+    final ride = res["ongoing_ride"];
+    final status = ride["status"] ?? "unknown";
+    final origin = ride["origin"] ?? "";
+    final destination = ride["destination"] ?? "";
+    final driverPhone = ride["driver_phone"] ?? "";
+    final driverFirstName = ride["driver_first_name"] ?? "";
+    final driverLastName = ride["driver_last_name"] ?? "";
+
+    if (mounted) {
+      setState(() {
+        String statusText = "Status: $status\nFrom: $origin\nTo: $destination";
+
+        // Add driver info for passengers (not for drivers viewing their own ride)
+        if (driverPhone.isNotEmpty && driverFirstName.isNotEmpty) {
+          statusText +=
+              "\n\nDriver: $driverFirstName $driverLastName\nPhone: +$driverPhone";
+        }
+
+        ongoingStatus = statusText;
+      });
+    }
   }
 
   Future<void> _logout() async {
@@ -70,55 +150,80 @@ class _HomeScreenState extends State<HomeScreen> {
         bottomNavigationBar: const BottomNav(index: 0),
 
         body: SafeArea(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(20),
+          child: RefreshIndicator(
+            onRefresh: () async {
+              await _loadUserInfo();
+              await _loadActiveRide();
+            },
+            child: SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.all(20),
 
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  // LOGO + APP NAME
+                  Image.asset("elementsuwu/logo.png", height: 180),
+                  Text("TreeWayz", style: AppText.heading),
+                  Text("Thrifty, Thoughtful, Together", style: AppText.small),
 
-                // LOGO + APP NAME
-                Image.asset("elementsuwu/logo.png", height: 180),
-                Text(
-                  "TreeWayz",
-                  style: AppText.heading
-                ),
-                Text(
-                  "Thrifty, Thoughtful, Together",
-                  style: AppText.small
-                ),
+                  const SizedBox(height: 20),
 
-                const SizedBox(height: 20),
+                  // NAME CARD
+                  _buildNameCard(),
 
-                // NAME CARD
-                _buildNameCard(),
+                  const SizedBox(height: 30),
 
-                const SizedBox(height: 30),
-
-                // ONGOING SECTION
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    "Ongoing:",
-                    style: AppText.subheading
+                  // ONGOING SECTION
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text("Ongoing:", style: AppText.subheading),
                   ),
-                ),
 
-                const SizedBox(height: 10),
+                  const SizedBox(height: 10),
 
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: AppColors.lightGrey,
-                    borderRadius: BorderRadius.circular(12),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: AppColors.lightGrey,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(ongoingStatus, style: AppText.text),
                   ),
-                  child: Text(
-                    ongoingStatus,
-                     style: AppText.text
-                  ),
-                ),
-              ],
+
+                  // Manage Ride Button (if there's an active ride)
+                  if (ongoingStatus != "No active rides.") ...[
+                    const SizedBox(height: 15),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primaryGreen,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                        ),
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) =>
+                                  const DriverRideManagementScreen(),
+                            ),
+                          );
+                        },
+                        icon: const Icon(Icons.settings, color: Colors.white),
+                        label: const Text(
+                          'MANAGE MY RIDE',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
             ),
           ),
         ),
@@ -127,23 +232,23 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildNameCard() {
-    final first = userData?["firstName"] ?? "uwu";
-    final last = userData?["lastName"] ?? "uwu";
-    final riderRating = userData?["riderRating"];
-    final driverRating = userData?["driverRating"];
-    final phone = userData?["phone"] ?? "uwu";
+    final first = userData?["first_name"] ?? "uwu"; // Changed from firstName
+    final last = userData?["last_name"] ?? "uwu"; // Changed from lastName
+    final riderRating = userData?["rider_rating"]; // Changed from riderRating
+    final driverRating =
+        userData?["driver_rating"]; // Changed from driverRating
+    final phone =
+        userData?["contact"] ?? "uwu"; // Changed from phone to contact
 
     return Container(
       width: double.infinity,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(12),
-      ),
+      decoration: BoxDecoration(borderRadius: BorderRadius.circular(12)),
       child: Column(
         children: [
           // GREEN HEADER
           Container(
             width: double.infinity,
-             padding: const EdgeInsets.symmetric(vertical: 5, horizontal: 20),
+            padding: const EdgeInsets.symmetric(vertical: 5, horizontal: 20),
             decoration: const BoxDecoration(
               color: AppColors.darkGreen,
               borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
@@ -161,10 +266,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   Text(
                     "my name is",
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 14,
-                    ),
+                    style: TextStyle(color: Colors.white, fontSize: 14),
                   ),
                 ],
               ),
@@ -181,40 +283,45 @@ class _HomeScreenState extends State<HomeScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Full name
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(first,
-                        style: const TextStyle(
-                            fontSize: 16, fontWeight: FontWeight.bold)),
-                    Text(last,
-                        style: const TextStyle(
-                            fontSize: 16, fontWeight: FontWeight.bold)),
+                    Text(
+                      first,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    Text(
+                      last,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                   ],
                 ),
-
                 const SizedBox(height: 10),
-
-                // Rider Rating
-                Text("Rider Rating: ${_stars(riderRating is int ? riderRating : null)}"),
-
-                // Driver Rating
-                Text("Driver Rating: ${_stars(driverRating is int ? driverRating : null)}"),
-
+                Text(
+                  "Rider Rating: ${_formatRating(riderRating)}",
+                  style: const TextStyle(fontSize: 14),
+                ),
+                Text(
+                  "Driver Rating: ${_formatRating(driverRating)}",
+                  style: const TextStyle(fontSize: 14),
+                ),
                 const SizedBox(height: 10),
-
-                // Contact number
                 Text("Contact No: +$phone"),
               ],
             ),
           ),
 
-          // PLAIN GREEN FOOTER
+          // FOOTER
           Container(
             width: double.infinity,
             padding: const EdgeInsets.symmetric(vertical: 5, horizontal: 20),
-            decoration: BoxDecoration(
+            decoration: const BoxDecoration(
               color: AppColors.darkGreen,
               borderRadius: BorderRadius.vertical(bottom: Radius.circular(12)),
             ),
@@ -224,8 +331,27 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  String _stars(int? count) {
-    if (count == null) return "☆☆☆☆☆";
-    return "★" * count + "☆" * (5 - count);
+  String _formatRating(dynamic rating) {
+    if (rating == null) return "No ratings yet";
+
+    // Convert to double
+    double ratingValue = 0.0;
+    if (rating is int) {
+      ratingValue = rating.toDouble();
+    } else if (rating is double) {
+      ratingValue = rating;
+    } else if (rating is String) {
+      ratingValue = double.tryParse(rating) ?? 0.0;
+    }
+
+    // Clamp between 0 and 5
+    ratingValue = ratingValue.clamp(0.0, 5.0);
+
+    // Get star count (rounded)
+    int starCount = ratingValue.round();
+    String stars = "★" * starCount + "☆" * (5 - starCount);
+
+    // Format: "4.5 ★★★★☆"
+    return "${ratingValue.toStringAsFixed(1)} $stars";
   }
 }

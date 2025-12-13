@@ -13,7 +13,6 @@ class LoadingScreen extends StatefulWidget {
 }
 
 class _LoadingScreenState extends State<LoadingScreen> {
-
   @override
   void initState() {
     super.initState();
@@ -21,37 +20,48 @@ class _LoadingScreenState extends State<LoadingScreen> {
   }
 
   Future<void> _validateUser() async {
-    await Future.delayed(const Duration(milliseconds: 800)); // for UI smoothness
+    await Future.delayed(const Duration(milliseconds: 800));
 
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('token');
+
+    print('Token found: ${token != null}');
 
     if (token == null) {
       _goToSignin();
       return;
     }
 
-    final res = await Api.get("/auth/validate"); 
+    // Try to load home data - if it works, token is valid
+    final res = await Api.get("/home");
 
-    if (res != null && res["valid"] == true) {
+    print('Validation response: $res');
+
+    if (res != null && res["success"] == true) {
       _goToHome();
     } else {
+      // Token invalid or expired
+      await prefs.remove('token');
       _goToSignin();
     }
   }
 
   void _goToSignin() {
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (context) => const SigninScreen()),
-    );
+    if (mounted) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const SigninScreen()),
+      );
+    }
   }
 
   void _goToHome() {
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (context) => const HomeScreen()),
-    );
+    if (mounted) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const HomeScreen()),
+      );
+    }
   }
 
   @override
@@ -60,11 +70,9 @@ class _LoadingScreenState extends State<LoadingScreen> {
       canPop: false,
       onPopInvokedWithResult: (bool didPop, dynamic result) {
         if (didPop) return;
-        // If there's a previous page in the stack, go back normally
         if (Navigator.canPop(context)) {
           Navigator.pop(context);
         } else {
-          // No previous page (or came from auth), go to logout
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(builder: (context) => const LogoutScreen()),
@@ -72,37 +80,32 @@ class _LoadingScreenState extends State<LoadingScreen> {
         }
       },
       child: const Scaffold(
-      backgroundColor: Colors.white,
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            // Logo
-            Image(
-              image: AssetImage("assets/logo.png"),
-              height: 180,
-            ),
-            SizedBox(height: 20),
-            Text(
-              "TreeWayz",
-              style: TextStyle(
-                fontSize: 26,
-                color: Color(0xFF1D6B3C),
-                fontWeight: FontWeight.bold,
+        backgroundColor: Colors.white,
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Image(image: AssetImage("elementsuwu/logo.png"), height: 180),
+              SizedBox(height: 20),
+              Text(
+                "TreeWayz",
+                style: TextStyle(
+                  fontSize: 26,
+                  color: Color(0xFF1D6B3C),
+                  fontWeight: FontWeight.bold,
+                ),
               ),
-            ),
-            SizedBox(height: 10),
-            Text(
-              "Reaping what you sowed ...",
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.black54,
+              SizedBox(height: 10),
+              Text(
+                "Reaping what you sowed ...",
+                style: TextStyle(fontSize: 14, color: Colors.black54),
               ),
-            )
-          ],
+              SizedBox(height: 20),
+              CircularProgressIndicator(color: Color(0xFF1D6B3C)),
+            ],
+          ),
         ),
       ),
-    )
     );
   }
 }

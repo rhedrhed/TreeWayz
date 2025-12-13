@@ -3,46 +3,92 @@ import '../servicesuwu/api.dart';
 import '../themeuwu/app_text.dart';
 import '../themeuwu/app_colors.dart';
 import '../screensuwu/home_screen.dart';
-import '../screensuwu/logout_screen.dart';
 
 class RateDriverScreen extends StatefulWidget {
-  const RateDriverScreen({super.key});
+  final String rideId;
+  final String driverId;
+  final String driverFirstName;
+  final String driverLastName;
+  final String? driverPhone;
+  final dynamic driverRating;
+
+  const RateDriverScreen({
+    super.key,
+    required this.rideId,
+    required this.driverId,
+    required this.driverFirstName,
+    required this.driverLastName,
+    this.driverPhone,
+    this.driverRating,
+  });
 
   @override
   State<RateDriverScreen> createState() => _RateDriverScreenState();
 }
 
 class _RateDriverScreenState extends State<RateDriverScreen> {
-  Map<String, dynamic>? driverData;
-  List<bool> starStates = [false, false, false, false, false];
   int rating = 0;
+  bool isSubmitting = false;
 
-  @override
-  void initState() {
-    super.initState();
-    _loadDriverInfo();
-  }
-
-  Future<void> _loadDriverInfo() async {
-    final res = await Api.get("/driver/me");
-    if (mounted) setState(() => driverData = res);
-  }
-
-  void _toggleStar(int index) {
+  void _selectRating(int selectedRating) {
     setState(() {
-      starStates[index] = !starStates[index];
-      rating = starStates.where((star) => star).length;
+      rating = selectedRating;
     });
   }
 
   Future<void> _submitRating() async {
-    // Temporarily just navigate to HomeScreen
-    // TODO: Implement API call to submit rating
-    // await Api.post("/driver/rate", body: {"rating": rating});
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (context) => const HomeScreen()),
-    );
+    if (rating == 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please select a rating'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    setState(() => isSubmitting = true);
+
+    try {
+      // POST /rides/rateDriver/:rideId with body: {"score": rating}
+      final response = await Api.post('/rides/rateDriver/${widget.rideId}', {
+        "score": rating,
+      });
+
+      if (mounted) {
+        setState(() => isSubmitting = false);
+
+        if (response != null && response["success"] == true) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Driver rated successfully!'),
+              backgroundColor: Colors.green,
+            ),
+          );
+
+          // Navigate to home
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(builder: (_) => const HomeScreen()),
+            (route) => false,
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(response?["message"] ?? 'Failed to submit rating'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => isSubmitting = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+        );
+      }
+    }
   }
 
   @override
@@ -50,89 +96,116 @@ class _RateDriverScreenState extends State<RateDriverScreen> {
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (bool didPop, dynamic result) {
-        // Do nothing - user must submit rating to exit
-        return;
+        // User must submit rating to exit
+        if (!didPop && !isSubmitting) {
+          showDialog(
+            context: context,
+            builder: (context) => AlertDialog(
+              title: const Text('Rating Required'),
+              content: const Text('Please rate your driver before continuing.'),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('OK'),
+                ),
+              ],
+            ),
+          );
+        }
       },
       child: Scaffold(
-      backgroundColor: Colors.white,
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              // LOGO + APP NAME
-              Image.asset("elementsuwu/logo.png", height: 180),
-              Text(
-                "TreeWayz",
-                style: AppText.heading,
-              ),
-              Text(
-                "Thrifty, Thoughtful, Together",
-                style: AppText.small,
-              ),
-              const SizedBox(height: 20),
+        backgroundColor: Colors.white,
+        body: SafeArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                // LOGO + APP NAME
+                Image.asset("elementsuwu/logo.png", height: 180),
+                Text("TreeWayz", style: AppText.heading),
+                Text("Thrifty, Thoughtful, Together", style: AppText.small),
+                const SizedBox(height: 20),
 
-              // DRIVER INFO CARD
-              _buildDriverCard(),
+                // DRIVER INFO CARD
+                _buildDriverCard(),
 
-              const SizedBox(height: 30),
+                const SizedBox(height: 30),
 
-              // RATING SECTION
-              Text(
-                "Rate the Driver:",
-                style: AppText.subheading,
-              ),
-              const SizedBox(height: 10),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: List.generate(5, (index) {
-                  return GestureDetector(
-                    onTap: () => _toggleStar(index),
-                    child: Image.asset(
-                      starStates[index] ? "elementsuwu/yes rate.png" : "elementsuwu/no rate.png",
-                      width: 70,
-                      height: 70,
+                // RATING SECTION
+                Text("Rate the Driver:", style: AppText.subheading),
+                const SizedBox(height: 10),
+
+                // Star Rating
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: List.generate(5, (index) {
+                    final starNumber = index + 1;
+                    final screenWidth = MediaQuery.of(context).size.width;
+                    final starSize = (screenWidth * 0.12).clamp(50.0, 70.0);
+
+                    return GestureDetector(
+                      onTap: () => _selectRating(starNumber),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 4),
+                        child: Image.asset(
+                          rating >= starNumber
+                              ? "elementsuwu/yes rate.png"
+                              : "elementsuwu/no rate.png",
+                          width: starSize,
+                          height: starSize,
+                        ),
+                      ),
+                    );
+                  }),
+                ),
+
+                const SizedBox(height: 20),
+                Text(
+                  rating == 0 ? "Tap to rate" : "Rating: $rating / 5",
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+
+                const SizedBox(height: 30),
+
+                // SUBMIT BUTTON
+                ElevatedButton(
+                  onPressed: (rating > 0 && !isSubmitting)
+                      ? _submitRating
+                      : null,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primaryGreen,
+                    fixedSize: const Size(350, 50),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
                     ),
-                  );
-                }),
-              ),
-              const SizedBox(height: 20),
-              Text("Current Rating: $rating / 5"),
-
-              const SizedBox(height: 30),
-
-              // SUBMIT BUTTON
-              ElevatedButton(
-                onPressed: rating > 0 ? _submitRating : null,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.darkGreen,
-                  padding: const EdgeInsets.symmetric(horizontal: 50, vertical: 15),
+                  ),
+                  child: isSubmitting
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 2,
+                          ),
+                        )
+                      : const Text("Submit Rating", style: AppText.button),
                 ),
-                child: const Text(
-                  "Submit Rating",
-                  style: TextStyle(color: Colors.white, fontSize: 16),
-                ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
-    )
     );
   }
 
   Widget _buildDriverCard() {
-    final first = driverData?["firstName"] ?? "uwu";
-    final last = driverData?["lastName"] ?? "uwu";
-    final driverRating = driverData?["driverRating"];
-    final phone = driverData?["phone"] ?? "uwu";
-
     return Container(
       width: double.infinity,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(12),
-      ),
+      decoration: BoxDecoration(borderRadius: BorderRadius.circular(12)),
       child: Column(
         children: [
           // GREEN HEADER
@@ -156,10 +229,7 @@ class _RateDriverScreenState extends State<RateDriverScreen> {
                   ),
                   Text(
                     "MY NAME IS",
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 14,
-                    ),
+                    style: TextStyle(color: Colors.white, fontSize: 14),
                   ),
                 ],
               ),
@@ -180,24 +250,33 @@ class _RateDriverScreenState extends State<RateDriverScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(first,
-                        style: const TextStyle(
-                            fontSize: 16, fontWeight: FontWeight.bold)),
-                    Text(last,
-                        style: const TextStyle(
-                            fontSize: 16, fontWeight: FontWeight.bold)),
+                    Text(
+                      widget.driverFirstName,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    Text(
+                      widget.driverLastName,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                   ],
                 ),
 
                 const SizedBox(height: 10),
 
                 // Driver Rating
-                Text("Driver Rating: ${_stars(driverRating is int ? driverRating : null)}"),
+                Text("Driver Rating: ${_stars(widget.driverRating)}"),
 
                 const SizedBox(height: 10),
 
                 // Contact number
-                Text("Contact No: +$phone"),
+                if (widget.driverPhone != null)
+                  Text("Contact No: ${widget.driverPhone}"),
               ],
             ),
           ),
@@ -206,7 +285,7 @@ class _RateDriverScreenState extends State<RateDriverScreen> {
           Container(
             width: double.infinity,
             padding: const EdgeInsets.symmetric(vertical: 5, horizontal: 20),
-            decoration: BoxDecoration(
+            decoration: const BoxDecoration(
               color: AppColors.darkGreen,
               borderRadius: BorderRadius.vertical(bottom: Radius.circular(12)),
             ),
@@ -216,8 +295,19 @@ class _RateDriverScreenState extends State<RateDriverScreen> {
     );
   }
 
-  String _stars(int? count) {
-    if (count == null) return "☆☆☆☆☆";
+  String _stars(dynamic rating) {
+    if (rating == null) return "☆☆☆☆☆";
+
+    int count = 0;
+    if (rating is int) {
+      count = rating;
+    } else if (rating is double) {
+      count = rating.round();
+    } else if (rating is String) {
+      count = int.tryParse(rating) ?? 0;
+    }
+
+    count = count.clamp(0, 5);
     return "★" * count + "☆" * (5 - count);
   }
 }

@@ -17,26 +17,20 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
   String? seats;
   String? paymentMethod;
 
-  // Define location sets for pickup and destination logic
-  // Set A: Locations that can be picked up from and can go to both A and B as destination
-  static const List<String> setA = ['AUBH', 'KU', 'Polytehcnic'];
-  // Set B: Locations that can be picked up from but can only go to B as destination
+  static const List<String> setA = ['AUBH', 'KU', 'Polytechnic'];
   static const List<String> setB = ['Juffair', 'Busaiteen', 'Aali'];
 
-  // Pickup options: if destination is setB, only setA; else both
-  List<String> get pickupOptions => (destination != null && setB.contains(destination)) ? setA : setA + setB;
+  List<String> get pickupOptions =>
+      (destination != null && setB.contains(destination)) ? setA : setA + setB;
 
-  // Destination options: if pickup is setB, only setA; else if pickup is setA, both; else empty
-  // Also exclude the pickup point from destination options
   List<String> get destinationOptions {
     if (pickupPoint == null) return [];
     List<String> options;
     if (setB.contains(pickupPoint)) {
-      options = setA; // Only setA
+      options = setA;
     } else {
-      options = setA + setB; // Both
+      options = setA + setB;
     }
-    // Remove the pickup point from destination options
     return options.where((location) => location != pickupPoint).toList();
   }
 
@@ -44,10 +38,23 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
   final List<String> paymentOptions = ['Cash', 'Benefit'];
 
   bool get isFormValid =>
-      pickupPoint != null &&
-      destination != null &&
-      seats != null &&
-      paymentMethod != null;
+      pickupPoint != null && destination != null && seats != null;
+
+  void _searchRides() {
+    if (!isFormValid) return;
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => RideSelectionScreen(
+          pickupPoint: pickupPoint!,
+          destination: destination!,
+          seats: seats!,
+          paymentMethod: paymentMethod,
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -55,11 +62,9 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
       canPop: false,
       onPopInvokedWithResult: (bool didPop, dynamic result) {
         if (didPop) return;
-        // If there's a previous page in the stack, go back normally
         if (Navigator.canPop(context)) {
           Navigator.pop(context);
         } else {
-          // No previous page (or came from auth), go to logout
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(builder: (context) => const LogoutScreen()),
@@ -67,122 +72,123 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
         }
       },
       child: Scaffold(
-      backgroundColor: AppColors.white,
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            children: [
-              Image.asset("elementsuwu/logo.png", height: 180),
-              Text("TreeWayz", style: AppText.heading),
-              Text("Thrifty, Thoughtful, Together", style: AppText.small),
-              const SizedBox(height: 20),
-              Text("Enter ride details", style: AppText.subheading),
-              const SizedBox(height: 20),
-              DropdownButtonFormField<String>(
-                value: pickupPoint,
-                decoration: const InputDecoration(
-                  labelText: 'Pickup Point',
-                  border: OutlineInputBorder(),
+        backgroundColor: AppColors.white,
+        body: SafeArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              children: [
+                Image.asset("elementsuwu/logo.png", height: 180),
+                Text("TreeWayz", style: AppText.heading),
+                Text("Thrifty, Thoughtful, Together", style: AppText.small),
+                const SizedBox(height: 20),
+                Text("Enter ride details", style: AppText.subheading),
+                const SizedBox(height: 20),
+                DropdownButtonFormField<String>(
+                  value: pickupPoint,
+                  decoration: const InputDecoration(
+                    labelText: 'Pickup Point',
+                    border: OutlineInputBorder(),
+                  ),
+                  items: pickupOptions.map((String value) {
+                    return DropdownMenuItem<String>(
+                      value: value,
+                      child: Text(value),
+                    );
+                  }).toList(),
+                  onChanged: (String? newValue) {
+                    setState(() {
+                      pickupPoint = newValue;
+                      if (destination != null &&
+                          (destination == pickupPoint ||
+                              !destinationOptions.contains(destination))) {
+                        destination = null;
+                      }
+                    });
+                  },
                 ),
-                items: pickupOptions.map((String value) {
-                  return DropdownMenuItem<String>(
-                    value: value,
-                    child: Text(value),
-                  );
-                }).toList(),
-                onChanged: (String? newValue) {
-                  setState(() {
-                    pickupPoint = newValue;
-                    // Reset destination if it's the same as pickup or no longer valid
-                    if (destination != null && (destination == pickupPoint || !destinationOptions.contains(destination))) {
-                      destination = null;
-                    }
-                  });
-                },
-              ),
-              const SizedBox(height: 15),
-              DropdownButtonFormField<String>(
-                value: destination,
-                decoration: const InputDecoration(
-                  labelText: 'Select Destination',
-                  border: OutlineInputBorder(),
+                const SizedBox(height: 15),
+                DropdownButtonFormField<String>(
+                  value: destination,
+                  decoration: const InputDecoration(
+                    labelText: 'Select Destination',
+                    border: OutlineInputBorder(),
+                  ),
+                  items: destinationOptions.map((String value) {
+                    return DropdownMenuItem<String>(
+                      value: value,
+                      child: Text(value),
+                    );
+                  }).toList(),
+                  onChanged: (String? newValue) {
+                    setState(() {
+                      destination = newValue;
+                      if (pickupPoint != null &&
+                          !pickupOptions.contains(pickupPoint)) {
+                        pickupPoint = null;
+                      }
+                    });
+                  },
                 ),
-                items: destinationOptions.map((String value) {
-                  return DropdownMenuItem<String>(
-                    value: value,
-                    child: Text(value),
-                  );
-                }).toList(),
-                onChanged: (String? newValue) {
-                  setState(() {
-                    destination = newValue;
-                    // Reset pickup if it's no longer valid
-                    if (pickupPoint != null && !pickupOptions.contains(pickupPoint)) {
-                      pickupPoint = null;
-                    }
-                  });
-                },
-              ),
-              const SizedBox(height: 15),
-              DropdownButtonFormField<String>(
-                value: seats,
-                decoration: const InputDecoration(
-                  labelText: 'Needed No. of Seats',
-                  border: OutlineInputBorder(),
+                const SizedBox(height: 15),
+                DropdownButtonFormField<String>(
+                  value: seats,
+                  decoration: const InputDecoration(
+                    labelText: 'Needed No. of Seats',
+                    border: OutlineInputBorder(),
+                  ),
+                  items: seatsOptions.map((String value) {
+                    return DropdownMenuItem<String>(
+                      value: value,
+                      child: Text(value),
+                    );
+                  }).toList(),
+                  onChanged: (String? newValue) {
+                    setState(() {
+                      seats = newValue;
+                    });
+                  },
                 ),
-                items: seatsOptions.map((String value) {
-                  return DropdownMenuItem<String>(
-                    value: value,
-                    child: Text(value),
-                  );
-                }).toList(),
-                onChanged: (String? newValue) {
-                  setState(() {
-                    seats = newValue;
-                  });
-                },
-              ),
-              const SizedBox(height: 15),
-              DropdownButtonFormField<String>(
-                value: paymentMethod,
-                decoration: const InputDecoration(
-                  labelText: 'Method of Payment',
-                  border: OutlineInputBorder(),
+                const SizedBox(height: 15),
+                DropdownButtonFormField<String>(
+                  value: paymentMethod,
+                  decoration: const InputDecoration(
+                    labelText: 'Method of Payment (Optional)',
+                    border: OutlineInputBorder(),
+                  ),
+                  items: paymentOptions.map((String value) {
+                    return DropdownMenuItem<String>(
+                      value: value,
+                      child: Text(value),
+                    );
+                  }).toList(),
+                  onChanged: (String? newValue) {
+                    setState(() {
+                      paymentMethod = newValue;
+                    });
+                  },
                 ),
-                items: paymentOptions.map((String value) {
-                  return DropdownMenuItem<String>(
-                    value: value,
-                    child: Text(value),
-                  );
-                }).toList(),
-                onChanged: (String? newValue) {
-                  setState(() {
-                    paymentMethod = newValue;
-                  });
-                },
-              ),
-              const SizedBox(height: 20),
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primaryGreen,
-                  fixedSize: const Size(350, 50),
-                  padding: const EdgeInsets.symmetric(horizontal: 48, vertical: 14),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                const SizedBox(height: 20),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primaryGreen,
+                    fixedSize: const Size(350, 50),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 48,
+                      vertical: 14,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                  onPressed: isFormValid ? _searchRides : null,
+                  child: const Text("Search Rides", style: AppText.button),
                 ),
-                onPressed: isFormValid ? () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const RideSelectionScreen()),
-                  );
-                } : null,
-                child: const Text("Request Ride", style: AppText.button),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
-    )
     );
   }
 }

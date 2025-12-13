@@ -3,46 +3,93 @@ import '../servicesuwu/api.dart';
 import '../themeuwu/app_text.dart';
 import '../themeuwu/app_colors.dart';
 import '../screensuwu/home_screen.dart';
-import '../screensuwu/logout_screen.dart';
 
 class RateRiderScreen extends StatefulWidget {
-  const RateRiderScreen({super.key});
+  final String rideId;
+  final String riderId;
+  final String riderFirstName;
+  final String riderLastName;
+  final String? riderPhone;
+  final dynamic riderRating;
+
+  const RateRiderScreen({
+    super.key,
+    required this.rideId,
+    required this.riderId,
+    required this.riderFirstName,
+    required this.riderLastName,
+    this.riderPhone,
+    this.riderRating,
+  });
 
   @override
   State<RateRiderScreen> createState() => _RateRiderScreenState();
 }
 
 class _RateRiderScreenState extends State<RateRiderScreen> {
-  Map<String, dynamic>? riderData;
-  List<bool> starStates = [false, false, false, false, false];
   int rating = 0;
+  bool isSubmitting = false;
 
-  @override
-  void initState() {
-    super.initState();
-    _loadRiderInfo();
-  }
-
-  Future<void> _loadRiderInfo() async {
-    final res = await Api.get("/rider/me");
-    if (mounted) setState(() => riderData = res);
-  }
-
-  void _toggleStar(int index) {
+  void _selectRating(int selectedRating) {
     setState(() {
-      starStates[index] = !starStates[index];
-      rating = starStates.where((star) => star).length;
+      rating = selectedRating;
     });
   }
 
   Future<void> _submitRating() async {
-    // Temporarily just navigate to HomeScreen
-    // TODO: Implement API call to submit rating
-    // await Api.post("/rider/rate", body: {"rating": rating});
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (context) => const HomeScreen()),
-    );
+    if (rating == 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please select a rating'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    setState(() => isSubmitting = true);
+
+    try {
+      // POST /rides/rateRider/:rideId with body: {"rider_id": riderId, "score": rating}
+      final response = await Api.post('/rides/rateRider/${widget.rideId}', {
+        "rider_id": widget.riderId,
+        "score": rating,
+      });
+
+      if (mounted) {
+        setState(() => isSubmitting = false);
+
+        if (response != null && response["success"] == true) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Rider rated successfully!'),
+              backgroundColor: Colors.green,
+            ),
+          );
+
+          // Navigate to home
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(builder: (_) => const HomeScreen()),
+            (route) => false,
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(response?["message"] ?? 'Failed to submit rating'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => isSubmitting = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+        );
+      }
+    }
   }
 
   @override
@@ -50,89 +97,113 @@ class _RateRiderScreenState extends State<RateRiderScreen> {
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (bool didPop, dynamic result) {
-        // Do nothing - user must submit rating to exit
-        return;
+        // User must submit rating to exit
+        if (!didPop && !isSubmitting) {
+          showDialog(
+            context: context,
+            builder: (context) => AlertDialog(
+              title: const Text('Rating Required'),
+              content: const Text('Please rate your rider before continuing.'),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('OK'),
+                ),
+              ],
+            ),
+          );
+        }
       },
       child: Scaffold(
-      backgroundColor: Colors.white,
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              // LOGO + APP NAME
-              Image.asset("elementsuwu/logo.png", height: 180),
-              Text(
-                "TreeWayz",
-                style: AppText.heading,
-              ),
-              Text(
-                "Thrifty, Thoughtful, Together",
-                style: AppText.small,
-              ),
-              const SizedBox(height: 20),
+        backgroundColor: Colors.white,
+        body: SafeArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                // LOGO + APP NAME
+                Image.asset("elementsuwu/logo.png", height: 180),
+                Text("TreeWayz", style: AppText.heading),
+                Text("Thrifty, Thoughtful, Together", style: AppText.small),
+                const SizedBox(height: 20),
 
-              // RIDER INFO CARD
-              _buildRiderCard(),
+                // RIDER INFO CARD
+                _buildRiderCard(),
 
-              const SizedBox(height: 30),
+                const SizedBox(height: 30),
 
-              // RATING SECTION
-              Text(
-                "Rate the Rider:",
-                style: AppText.subheading,
-              ),
-              const SizedBox(height: 10),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: List.generate(5, (index) {
-                  return GestureDetector(
-                    onTap: () => _toggleStar(index),
-                    child: Image.asset(
-                      starStates[index] ? "elementsuwu/yes rate.png" : "elementsuwu/no rate.png",
-                      width: 70,
-                      height: 70,
+                // RATING SECTION
+                Text("Rate the Rider:", style: AppText.subheading),
+                const SizedBox(height: 10),
+
+                // Star Rating
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: List.generate(5, (index) {
+                    final starNumber = index + 1;
+                    return GestureDetector(
+                      onTap: () => _selectRating(starNumber),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 4),
+                        child: Image.asset(
+                          rating >= starNumber
+                              ? "elementsuwu/yes rate.png"
+                              : "elementsuwu/no rate.png",
+                          width: 60,
+                          height: 60,
+                        ),
+                      ),
+                    );
+                  }),
+                ),
+
+                const SizedBox(height: 20),
+                Text(
+                  rating == 0 ? "Tap to rate" : "Rating: $rating / 5",
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+
+                const SizedBox(height: 30),
+
+                // SUBMIT BUTTON
+                ElevatedButton(
+                  onPressed: (rating > 0 && !isSubmitting)
+                      ? _submitRating
+                      : null,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primaryGreen,
+                    fixedSize: const Size(350, 50),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
                     ),
-                  );
-                }),
-              ),
-              const SizedBox(height: 20),
-              Text("Current Rating: $rating / 5"),
-
-              const SizedBox(height: 30),
-
-              // SUBMIT BUTTON
-              ElevatedButton(
-                onPressed: rating > 0 ? _submitRating : null,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.darkGreen,
-                  padding: const EdgeInsets.symmetric(horizontal: 50, vertical: 15),
+                  ),
+                  child: isSubmitting
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 2,
+                          ),
+                        )
+                      : const Text("Submit Rating", style: AppText.button),
                 ),
-                child: const Text(
-                  "Submit Rating",
-                  style: TextStyle(color: Colors.white, fontSize: 16),
-                ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
-    )
     );
   }
 
   Widget _buildRiderCard() {
-    final first = riderData?["firstName"] ?? "uwu";
-    final last = riderData?["lastName"] ?? "uwu";
-    final riderRating = riderData?["riderRating"];
-    final phone = riderData?["phone"] ?? "uwu";
-
     return Container(
       width: double.infinity,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(12),
-      ),
+      decoration: BoxDecoration(borderRadius: BorderRadius.circular(12)),
       child: Column(
         children: [
           // GREEN HEADER
@@ -156,10 +227,7 @@ class _RateRiderScreenState extends State<RateRiderScreen> {
                   ),
                   Text(
                     "MY NAME IS",
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 14,
-                    ),
+                    style: TextStyle(color: Colors.white, fontSize: 14),
                   ),
                 ],
               ),
@@ -180,24 +248,33 @@ class _RateRiderScreenState extends State<RateRiderScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(first,
-                        style: const TextStyle(
-                            fontSize: 16, fontWeight: FontWeight.bold)),
-                    Text(last,
-                        style: const TextStyle(
-                            fontSize: 16, fontWeight: FontWeight.bold)),
+                    Text(
+                      widget.riderFirstName,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    Text(
+                      widget.riderLastName,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                   ],
                 ),
 
                 const SizedBox(height: 10),
 
                 // Rider Rating
-                Text("Rider Rating: ${_stars(riderRating is int ? riderRating : null)}"),
+                Text("Rider Rating: ${_stars(widget.riderRating)}"),
 
                 const SizedBox(height: 10),
 
                 // Contact number
-                Text("Contact No: +$phone"),
+                if (widget.riderPhone != null)
+                  Text("Contact No: ${widget.riderPhone}"),
               ],
             ),
           ),
@@ -206,7 +283,7 @@ class _RateRiderScreenState extends State<RateRiderScreen> {
           Container(
             width: double.infinity,
             padding: const EdgeInsets.symmetric(vertical: 5, horizontal: 20),
-            decoration: BoxDecoration(
+            decoration: const BoxDecoration(
               color: AppColors.darkGreen,
               borderRadius: BorderRadius.vertical(bottom: Radius.circular(12)),
             ),
@@ -216,8 +293,19 @@ class _RateRiderScreenState extends State<RateRiderScreen> {
     );
   }
 
-  String _stars(int? count) {
-    if (count == null) return "☆☆☆☆☆";
+  String _stars(dynamic rating) {
+    if (rating == null) return "☆☆☆☆☆";
+
+    int count = 0;
+    if (rating is int) {
+      count = rating;
+    } else if (rating is double) {
+      count = rating.round();
+    } else if (rating is String) {
+      count = int.tryParse(rating) ?? 0;
+    }
+
+    count = count.clamp(0, 5);
     return "★" * count + "☆" * (5 - count);
   }
 }

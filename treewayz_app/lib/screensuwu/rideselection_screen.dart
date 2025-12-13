@@ -3,9 +3,21 @@ import '../servicesuwu/api.dart';
 import '../themeuwu/app_text.dart';
 import '../themeuwu/app_colors.dart';
 import '../screensuwu/logout_screen.dart';
+import '../screensuwu/home_screen.dart';
 
 class RideSelectionScreen extends StatefulWidget {
-  const RideSelectionScreen({super.key});
+  final String pickupPoint;
+  final String destination;
+  final String seats;
+  final String? paymentMethod;
+
+  const RideSelectionScreen({
+    super.key,
+    required this.pickupPoint,
+    required this.destination,
+    required this.seats,
+    this.paymentMethod,
+  });
 
   @override
   State<RideSelectionScreen> createState() => _RideSelectionScreenState();
@@ -14,6 +26,7 @@ class RideSelectionScreen extends StatefulWidget {
 class _RideSelectionScreenState extends State<RideSelectionScreen> {
   List<Map<String, dynamic>> availableRides = [];
   bool isLoading = true;
+  String? errorMessage;
 
   @override
   void initState() {
@@ -22,52 +35,100 @@ class _RideSelectionScreenState extends State<RideSelectionScreen> {
   }
 
   Future<void> _loadAvailableRides() async {
-    setState(() => isLoading = true);
-    
-    // TODO: Replace with actual API call when backend is integrated
-    // final res = await Api.get("/rides/available");
-    
-    // Demo data with "uwu" for null fields
-    await Future.delayed(const Duration(milliseconds: 500)); // Simulate API call
-    
-    final demoRides = [
-      {
-        "rideId": "1",
-        "driverName": "uwu",
-        "pickupPoint": "AUBH",
-        "destination": "Juffair",
-        "departureTime": "uwu",
-        "availableSeats": 3,
-        "paymentMethod": "Cash",
-        "driverRating": 4,
-      },
-      {
-        "rideId": "2",
-        "driverName": "uwu",
-        "pickupPoint": "KU",
-        "destination": "Busaiteen",
-        "departureTime": "uwu",
-        "availableSeats": 2,
-        "paymentMethod": "Benefit",
-        "driverRating": 5,
-      },
-      {
-        "rideId": "3",
-        "driverName": "uwu",
-        "pickupPoint": "Polytehcnic",
-        "destination": "Aali",
-        "departureTime": "uwu",
-        "availableSeats": 1,
-        "paymentMethod": "Cash",
-        "driverRating": 3,
-      },
-    ];
-    
-    if (mounted) {
-      setState(() {
-        availableRides = demoRides;
-        isLoading = false;
+    setState(() {
+      isLoading = true;
+      errorMessage = null;
+    });
+
+    try {
+      // Build query string
+      String queryString =
+          '?pickup_point=${widget.pickupPoint}&destination_point=${widget.destination}&seats_needed=${widget.seats}';
+      if (widget.paymentMethod != null) {
+        queryString += '&payment_method=${widget.paymentMethod!.toLowerCase()}';
+      }
+
+      final response = await Api.get('/rides/searchRides$queryString');
+
+      print('Search response: $response');
+
+      if (response != null && response["success"] == true) {
+        final rides = response["rides"] as List<dynamic>?;
+        if (mounted) {
+          setState(() {
+            availableRides =
+                rides?.map((ride) => ride as Map<String, dynamic>).toList() ??
+                [];
+            isLoading = false;
+          });
+        }
+      } else {
+        if (mounted) {
+          setState(() {
+            errorMessage = response?["message"] ?? 'Failed to load rides';
+            isLoading = false;
+          });
+        }
+      }
+    } catch (e) {
+      print('Error loading rides: $e');
+      if (mounted) {
+        setState(() {
+          errorMessage = 'Error: $e';
+          isLoading = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _bookRide(Map<String, dynamic> ride) async {
+    final rideId = ride["ride_id"];
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(child: CircularProgressIndicator()),
+    );
+
+    try {
+      final response = await Api.post('/rides/requestRide', {
+        "ride_id": rideId,
+        "seats": int.parse(widget.seats),
       });
+
+      if (mounted) {
+        Navigator.pop(context); // Close loading dialog
+
+        if (response != null && response["success"] == true) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Ride request sent successfully!'),
+              backgroundColor: Colors.green,
+            ),
+          );
+
+          // Navigate to home
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(builder: (_) => const HomeScreen()),
+            (route) => false,
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(response?["message"] ?? 'Failed to book ride'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+        );
+      }
     }
   }
 
@@ -77,11 +138,9 @@ class _RideSelectionScreenState extends State<RideSelectionScreen> {
       canPop: false,
       onPopInvokedWithResult: (bool didPop, dynamic result) {
         if (didPop) return;
-        // If there's a previous page (ride details), go back to it
         if (Navigator.canPop(context)) {
           Navigator.pop(context);
         } else {
-          // No previous page, go to logout
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(builder: (context) => const LogoutScreen()),
@@ -106,28 +165,59 @@ class _RideSelectionScreenState extends State<RideSelectionScreen> {
                   ],
                 ),
               ),
-              
+
               // Rides List
               Expanded(
                 child: isLoading
                     ? const Center(child: CircularProgressIndicator())
+                    : errorMessage != null
+                    ? Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(
+                              Icons.error_outline,
+                              size: 48,
+                              color: Colors.red,
+                            ),
+                            const SizedBox(height: 16),
+                            Text(errorMessage!, style: AppText.text),
+                            const SizedBox(height: 16),
+                            ElevatedButton(
+                              onPressed: _loadAvailableRides,
+                              child: const Text('Retry'),
+                            ),
+                          ],
+                        ),
+                      )
                     : availableRides.isEmpty
-                        ? Center(
-                            child: Text(
+                    ? Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(
+                              Icons.search_off,
+                              size: 48,
+                              color: Colors.grey,
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
                               "No available rides at the moment",
                               style: AppText.text,
                             ),
-                          )
-                        : Scrollbar(
-                            thumbVisibility: true,
-                            child: ListView.builder(
-                              padding: const EdgeInsets.symmetric(horizontal: 20),
-                              itemCount: availableRides.length,
-                              itemBuilder: (context, index) {
-                                return _buildRideCard(availableRides[index]);
-                              },
-                            ),
-                          ),
+                          ],
+                        ),
+                      )
+                    : RefreshIndicator(
+                        onRefresh: _loadAvailableRides,
+                        child: ListView.builder(
+                          padding: const EdgeInsets.symmetric(horizontal: 20),
+                          itemCount: availableRides.length,
+                          itemBuilder: (context, index) {
+                            return _buildRideCard(availableRides[index]);
+                          },
+                        ),
+                      ),
               ),
             ],
           ),
@@ -137,13 +227,15 @@ class _RideSelectionScreenState extends State<RideSelectionScreen> {
   }
 
   Widget _buildRideCard(Map<String, dynamic> ride) {
-    final driverName = ride["driverName"] ?? "uwu";
-    final pickupPoint = ride["pickupPoint"] ?? "uwu";
-    final destination = ride["destination"] ?? "uwu";
-    final departureTime = ride["departureTime"] ?? "uwu";
-    final availableSeats = ride["availableSeats"] ?? 0;
-    final paymentMethod = ride["paymentMethod"] ?? "uwu";
-    final driverRating = ride["driverRating"];
+    final driverName =
+        "${ride["first_name"] ?? "Driver"} ${ride["last_name"] ?? ""}";
+    final pickupPoint = ride["origin"] ?? "Unknown";
+    final destination = ride["destination"] ?? "Unknown";
+    final departureTime = ride["departure_time"] ?? "TBD";
+    final availableSeats = ride["available_seats"] ?? 0;
+    final pricePerSeat = ride["price"] ?? "0";
+    final paymentMethod = ride["payment_method"] ?? "cash";
+    final phone = ride["phone"] ?? "";
 
     return Container(
       margin: const EdgeInsets.only(bottom: 15),
@@ -163,22 +255,23 @@ class _RideSelectionScreenState extends State<RideSelectionScreen> {
         color: Colors.transparent,
         child: InkWell(
           borderRadius: BorderRadius.circular(12),
-          onTap: () {
-            // TODO: Navigate to ride confirmation or details
-            _showRideDetailsDialog(ride);
-          },
+          onTap: () => _showRideDetailsDialog(ride),
           child: Padding(
             padding: const EdgeInsets.all(16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Driver info and rating
+                // Driver info
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Row(
                       children: [
-                        const Icon(Icons.person, color: AppColors.darkGreen, size: 20),
+                        const Icon(
+                          Icons.person,
+                          color: AppColors.darkGreen,
+                          size: 20,
+                        ),
                         const SizedBox(width: 8),
                         Text(
                           driverName,
@@ -189,19 +282,30 @@ class _RideSelectionScreenState extends State<RideSelectionScreen> {
                         ),
                       ],
                     ),
-                    Row(
-                      children: [
-                        Text(_stars(driverRating is int ? driverRating : null)),
-                        const SizedBox(width: 4),
-                        const Icon(Icons.star, color: Colors.amber, size: 16),
-                      ],
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppColors.primaryGreen,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        '$pricePerSeat BD/seat',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 12,
+                        ),
+                      ),
                     ),
                   ],
                 ),
-                
+
                 const Divider(height: 20),
-                
-                // Route information
+
+                // Route
                 Row(
                   children: [
                     Expanded(
@@ -210,12 +314,19 @@ class _RideSelectionScreenState extends State<RideSelectionScreen> {
                         children: [
                           Row(
                             children: [
-                              const Icon(Icons.location_on, color: AppColors.primaryGreen, size: 18),
+                              const Icon(
+                                Icons.location_on,
+                                color: AppColors.primaryGreen,
+                                size: 18,
+                              ),
                               const SizedBox(width: 8),
                               Expanded(
                                 child: Text(
                                   pickupPoint,
-                                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                                  style: const TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                  ),
                                 ),
                               ),
                             ],
@@ -223,12 +334,19 @@ class _RideSelectionScreenState extends State<RideSelectionScreen> {
                           const SizedBox(height: 8),
                           Row(
                             children: [
-                              const Icon(Icons.flag, color: AppColors.red, size: 18),
+                              const Icon(
+                                Icons.flag,
+                                color: AppColors.red,
+                                size: 18,
+                              ),
                               const SizedBox(width: 8),
                               Expanded(
                                 child: Text(
                                   destination,
-                                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                                  style: const TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                  ),
                                 ),
                               ),
                             ],
@@ -236,50 +354,85 @@ class _RideSelectionScreenState extends State<RideSelectionScreen> {
                         ],
                       ),
                     ),
-                    const SizedBox(width: 10),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        Row(
-                          children: [
-                            const Icon(Icons.access_time, size: 16, color: AppColors.darkGreen),
-                            const SizedBox(width: 4),
-                            Text(
-                              departureTime,
-                              style: const TextStyle(fontSize: 12),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
                   ],
                 ),
-                
+
+                // Driver Phone Number
+                if (phone.isNotEmpty) ...[
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      const Icon(
+                        Icons.phone,
+                        color: AppColors.darkGreen,
+                        size: 18,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        '+$phone',
+                        style: const TextStyle(
+                          fontSize: 13,
+                          color: Colors.grey,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+
                 const Divider(height: 20),
-                
-                // Additional details
+
+                // Details
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Row(
                       children: [
-                        const Icon(Icons.event_seat, color: AppColors.darkGreen, size: 18),
+                        const Icon(
+                          Icons.event_seat,
+                          color: AppColors.darkGreen,
+                          size: 18,
+                        ),
                         const SizedBox(width: 8),
                         Text(
-                          "$availableSeats seats available",
+                          "$availableSeats seats",
                           style: const TextStyle(fontSize: 13),
                         ),
                       ],
                     ),
+                    Row(
+                      children: [
+                        const Icon(
+                          Icons.access_time,
+                          size: 16,
+                          color: AppColors.darkGreen,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          departureTime.substring(
+                            0,
+                            departureTime.length > 16
+                                ? 16
+                                : departureTime.length,
+                          ),
+                          style: const TextStyle(fontSize: 12),
+                        ),
+                      ],
+                    ),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 4,
+                      ),
                       decoration: BoxDecoration(
                         color: AppColors.lightGrey,
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Text(
                         paymentMethod,
-                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ),
                   ],
@@ -292,11 +445,6 @@ class _RideSelectionScreenState extends State<RideSelectionScreen> {
     );
   }
 
-  String _stars(int? count) {
-    if (count == null) return "☆☆☆☆☆";
-    return "★" * count + "☆" * (5 - count);
-  }
-
   void _showRideDetailsDialog(Map<String, dynamic> ride) {
     showDialog(
       context: context,
@@ -306,12 +454,15 @@ class _RideSelectionScreenState extends State<RideSelectionScreen> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text("Driver: ${ride['driverName']}"),
-            Text("From: ${ride['pickupPoint']}"),
+            Text("Driver: ${ride['first_name']} ${ride['last_name']}"),
+            Text("Phone: ${ride['phone']}"),
+            const Divider(),
+            Text("From: ${ride['origin']}"),
             Text("To: ${ride['destination']}"),
-            Text("Time: ${ride['departureTime']}"),
-            Text("Seats: ${ride['availableSeats']}"),
-            Text("Payment: ${ride['paymentMethod']}"),
+            Text("Time: ${ride['departure_time']}"),
+            Text("Available Seats: ${ride['available_seats']}"),
+            Text("Price: ${ride['price']} BD per seat"),
+            Text("Payment: ${ride['payment_method']}"),
           ],
         ),
         actions: [
@@ -322,15 +473,15 @@ class _RideSelectionScreenState extends State<RideSelectionScreen> {
           ElevatedButton(
             onPressed: () {
               Navigator.pop(context);
-              // TODO: Implement ride booking logic
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text("Booking feature coming soon!")),
-              );
+              _bookRide(ride);
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primaryGreen,
             ),
-            child: const Text("Book Ride", style: TextStyle(color: Colors.white)),
+            child: const Text(
+              "Book Ride",
+              style: TextStyle(color: Colors.white),
+            ),
           ),
         ],
       ),

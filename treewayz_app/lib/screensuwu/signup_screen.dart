@@ -50,13 +50,16 @@ class _SignupScreenState extends State<SignupScreen> {
 
     // clear field errors as user types
     first.addListener(() {
-      if (_firstError && first.text.trim().isNotEmpty) setState(() => _firstError = false);
+      if (_firstError && first.text.trim().isNotEmpty)
+        setState(() => _firstError = false);
     });
     last.addListener(() {
-      if (_lastError && last.text.trim().isNotEmpty) setState(() => _lastError = false);
+      if (_lastError && last.text.trim().isNotEmpty)
+        setState(() => _lastError = false);
     });
     pass.addListener(() {
-      if (_passError && pass.text.trim().isNotEmpty) setState(() => _passError = false);
+      if (_passError && pass.text.trim().isNotEmpty)
+        setState(() => _passError = false);
     });
 
     // phone listener: clear empty error and manage format error live
@@ -66,7 +69,8 @@ class _SignupScreenState extends State<SignupScreen> {
 
       // show format error while field is non-empty and length != 8
       final wantsFormatError = digits.isNotEmpty && digits.length != 8;
-      if (wantsFormatError != _phoneFormatError) setState(() => _phoneFormatError = wantsFormatError);
+      if (wantsFormatError != _phoneFormatError)
+        setState(() => _phoneFormatError = wantsFormatError);
     });
 
     // fixed email listener: clears "empty" error when user types and
@@ -88,7 +92,9 @@ class _SignupScreenState extends State<SignupScreen> {
         ScaffoldMessenger.of(context)
           ..removeCurrentSnackBar()
           ..showSnackBar(
-            const SnackBar(content: Text('Please use a university provided email')),
+            const SnackBar(
+              content: Text('Please use a university provided email'),
+            ),
           );
       } else if (!hasAt && _showedAtWarning) {
         // user removed '@' -> clear the warning immediately
@@ -172,8 +178,9 @@ class _SignupScreenState extends State<SignupScreen> {
     super.dispose();
   }
 
+  // Key changes in register() function:
+
   Future<void> register() async {
-    // validate required fields
     final f = first.text.trim();
     final l = last.text.trim();
     final ph = phone.text.trim();
@@ -187,11 +194,14 @@ class _SignupScreenState extends State<SignupScreen> {
       _phoneError = ph.isEmpty;
       _emailEmptyError = em.isEmpty;
       _passError = pw.isEmpty;
-
-      // phone format check
       _phoneFormatError = ph.isNotEmpty && !RegExp(r'^\d{8}$').hasMatch(ph);
-
-      hasError = _firstError || _lastError || _phoneError || _emailEmptyError || _passError || _phoneFormatError;
+      hasError =
+          _firstError ||
+          _lastError ||
+          _phoneError ||
+          _emailEmptyError ||
+          _passError ||
+          _phoneFormatError;
     });
 
     if (hasError) {
@@ -202,7 +212,6 @@ class _SignupScreenState extends State<SignupScreen> {
       return;
     }
 
-    // block registration if user typed '@' (we expect local-part only)
     if (_hasAtChar) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please use a university provided email')),
@@ -212,55 +221,50 @@ class _SignupScreenState extends State<SignupScreen> {
 
     setState(() => loading = true);
 
-    const domain = '@aubh.edu.bh';
-    final rawEmail = em;
-
-    // determine local part and validate domain if user typed a full email
-    String localPart = rawEmail;
-    if (rawEmail.contains('@')) {
-      final parts = rawEmail.split('@');
-      localPart = parts.first;
-      final providedDomain = '@' + parts.sublist(1).join('@');
-      if (providedDomain.toLowerCase() != domain) {
-        setState(() => loading = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Please use an @aubh.edu.bh email')),
-        );
-        return;
-      }
-    }
-
-    if (localPart.isEmpty) {
-      setState(() => loading = false);
-      setState(() => _emailEmptyError = true);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Enter your email local-part (before @)')),
-      );
-      return;
-    }
-
-    final fullEmail = '$localPart$domain';
-    final fullPhone = '973$ph';
-
-    final res = await Api.post('/auth/register', {
-      "firstName": f,
-      "lastName": l,
-      "email": fullEmail,
-      "phone": fullPhone,
+    // Backend expects these exact field names
+    final res = await Api.post('/register', {
+      "first_name": f, // Changed from firstName
+      "last_name": l, // Changed from lastName
+      "email": em, // Send local part only (backend adds @aubh.edu.bh)
+      "phone": '973$ph', // Include country code
       "password": pw,
     });
 
     setState(() => loading = false);
 
-    if (res != null) {
-      Navigator.pushReplacement(
-          context, MaterialPageRoute(builder: (_) => const SigninScreen()));
+    if (res != null && res["success"] == true) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Registration successful! Please sign in.'),
+          ),
+        );
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const SigninScreen()),
+        );
+      }
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              res?["message"] ?? 'Registration failed. Please try again.',
+            ),
+          ),
+        );
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    bool fieldsEmpty = first.text.trim().isEmpty || last.text.trim().isEmpty || phone.text.trim().isEmpty || email.text.trim().isEmpty || pass.text.trim().isEmpty;
+    bool fieldsEmpty =
+        first.text.trim().isEmpty ||
+        last.text.trim().isEmpty ||
+        phone.text.trim().isEmpty ||
+        email.text.trim().isEmpty ||
+        pass.text.trim().isEmpty;
     bool emailHasAt = email.text.contains('@');
     bool disableButton = loading || fieldsEmpty || emailHasAt;
 
@@ -274,169 +278,209 @@ class _SignupScreenState extends State<SignupScreen> {
         );
       },
       child: Scaffold(
-      backgroundColor: AppColors.white,
-      appBar: AppBar(backgroundColor: AppColors.white, elevation: 0),
-      body: SingleChildScrollView(
-        padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
-        child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            children: [
-              Image.asset("elementsuwu/logo.png", height: 180),
-              Text(
-                "TreeWayz",
-                style: AppText.heading,
-              ),
-              Text(
-                "Thrifty, Thoughtful, Together",
-                style: AppText.small,
-              ),
-              const SizedBox(height: 20),
-              TextField(
-                focusNode: _firstFocus,
-                controller: first,
-                cursorColor: AppColors.brown,
-                decoration: InputDecoration(
-                  labelText: "First Name",
-                  border: const OutlineInputBorder(),
-                  errorText: _firstError ? 'Thwis cwan nwot bwe emptwy uwu' : null,
-                ).copyWith(
-                  focusedBorder: const OutlineInputBorder(
-                    borderSide: BorderSide(color: AppColors.brown),
-                  ),
-                  enabledBorder: const OutlineInputBorder(
-                    borderSide: BorderSide(color: AppColors.lightGrey),
-                  ),
-                  floatingLabelStyle: const TextStyle(color: Colors.brown),
-                ),
-              ),
-              const SizedBox(height: 15),
-              TextField(
-                focusNode: _lastFocus,
-                controller: last,
-                cursorColor: AppColors.brown,
-                decoration: InputDecoration(
-                  labelText: "Last Name",
-                  border: const OutlineInputBorder(),
-                  errorText: _lastError ? 'Thwis cwan nwot bwe emptwy uwu' : null,
-                ).copyWith(
-                  focusedBorder: const OutlineInputBorder(
-                    borderSide: BorderSide(color: AppColors.brown),
-                  ),
-                  enabledBorder: const OutlineInputBorder(
-                    borderSide: BorderSide(color: AppColors.lightGrey),
-                  ),
-                  floatingLabelStyle: const TextStyle(color: Colors.brown),
-                ),
-              ),
-              const SizedBox(height: 20),
-              TextField(
-                focusNode: _emailFocus,
-                controller: email,
-                cursorColor: AppColors.brown,
-                keyboardType: TextInputType.emailAddress,
-                decoration: InputDecoration(
-                  labelText: "University Provided Email",
-                  hintText: "Ex: F2300067 or fatema.akbar",
-                  border: const OutlineInputBorder(),
-                  suffixText: "@aubh.edu.bh",
-                  suffixStyle: const TextStyle(color: AppColors.black),
-                  // show email errors
-                  errorText: _hasAtChar
-                      ? 'Pwease use a university pwovided email'
-                      : (_emailEmptyError ? 'Thwis cwan nwot bwe emptwy uwu' : null),
-                ).copyWith(
-                  focusedBorder: OutlineInputBorder(
-                    borderSide: BorderSide(color: _hasAtChar ? AppColors.red : AppColors.brown),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderSide: BorderSide(color: _hasAtChar ? AppColors.red : AppColors.lightGrey),
-                  ),
-                  floatingLabelStyle: const TextStyle(color: AppColors.brown),
-                ),
-              ),
-              const SizedBox(height: 15),
-              TextField(
-                focusNode: _phoneFocus,
-                controller: phone,
-                cursorColor: AppColors.brown,
-                keyboardType: TextInputType.number,
-                inputFormatters: [
-                  FilteringTextInputFormatter.digitsOnly,
-                  LengthLimitingTextInputFormatter(8),
-                ],
-                decoration: InputDecoration(
-                  labelText: "Phone #",
-                  prefixText: "973",
-                  prefixStyle: const TextStyle(color: AppColors.black),
-                  border: const OutlineInputBorder(),
-                  errorText: _phoneFormatError
-                      ? 'Enter exactly 8 digits after 973'
-                      : (_phoneError ? 'Thwis cwan nwot bwe emptwy uwu' : null),
-                ).copyWith(
-                  focusedBorder: OutlineInputBorder(
-                    borderSide: BorderSide(color: _phoneFormatError ? AppColors.red : AppColors.brown),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderSide: BorderSide(color: _phoneFormatError ? AppColors.red : AppColors.lightGrey),
-                  ),
-                  floatingLabelStyle: const TextStyle(color: AppColors.brown),
-                ),
-              ),
-              const SizedBox(height: 15),
-              TextField(
-                focusNode: _passFocus,
-                controller: pass,
-                obscureText: true,
-                cursorColor: AppColors.brown,
-                decoration: InputDecoration(
-                  labelText: "Password",
-                  border: const OutlineInputBorder(),
-                  errorText: _passError ? 'Thwis cwan nwot bwe emptwy uwu' : null,
-                ).copyWith(
-                  focusedBorder: const OutlineInputBorder(
-                    borderSide: BorderSide(color: AppColors.brown),
-                  ),
-                  enabledBorder: const OutlineInputBorder(
-                    borderSide: BorderSide(color: AppColors.lightGrey),
-                  ),
-                  floatingLabelStyle: const TextStyle(color: AppColors.brown),
-                ),
-              ),
-              const SizedBox(height: 20),
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primaryGreen,
-                  fixedSize: const Size(350, 50),
-                  padding: const EdgeInsets.symmetric(horizontal: 48, vertical: 14),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                ),
-                onPressed: disableButton ? null : register,
-                child: loading
-                    ? const CircularProgressIndicator(color: Colors.white)
-                    : const Text(
-                        "Step into TreeWayz",
-                        style: AppText.button,
+        backgroundColor: AppColors.white,
+        appBar: AppBar(backgroundColor: AppColors.white, elevation: 0),
+        body: SingleChildScrollView(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(context).viewInsets.bottom,
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              children: [
+                Image.asset("elementsuwu/logo.png", height: 180),
+                Text("TreeWayz", style: AppText.heading),
+                Text("Thrifty, Thoughtful, Together", style: AppText.small),
+                const SizedBox(height: 20),
+                TextField(
+                  focusNode: _firstFocus,
+                  controller: first,
+                  cursorColor: AppColors.brown,
+                  decoration:
+                      InputDecoration(
+                        labelText: "First Name",
+                        border: const OutlineInputBorder(),
+                        errorText: _firstError
+                            ? 'Thwis cwan nwot bwe emptwy uwu'
+                            : null,
+                      ).copyWith(
+                        focusedBorder: const OutlineInputBorder(
+                          borderSide: BorderSide(color: AppColors.brown),
+                        ),
+                        enabledBorder: const OutlineInputBorder(
+                          borderSide: BorderSide(color: AppColors.lightGrey),
+                        ),
+                        floatingLabelStyle: const TextStyle(
+                          color: Colors.brown,
+                        ),
                       ),
-              )
-            ],
+                ),
+                const SizedBox(height: 15),
+                TextField(
+                  focusNode: _lastFocus,
+                  controller: last,
+                  cursorColor: AppColors.brown,
+                  decoration:
+                      InputDecoration(
+                        labelText: "Last Name",
+                        border: const OutlineInputBorder(),
+                        errorText: _lastError
+                            ? 'Thwis cwan nwot bwe emptwy uwu'
+                            : null,
+                      ).copyWith(
+                        focusedBorder: const OutlineInputBorder(
+                          borderSide: BorderSide(color: AppColors.brown),
+                        ),
+                        enabledBorder: const OutlineInputBorder(
+                          borderSide: BorderSide(color: AppColors.lightGrey),
+                        ),
+                        floatingLabelStyle: const TextStyle(
+                          color: Colors.brown,
+                        ),
+                      ),
+                ),
+                const SizedBox(height: 20),
+                TextField(
+                  focusNode: _emailFocus,
+                  controller: email,
+                  cursorColor: AppColors.brown,
+                  keyboardType: TextInputType.emailAddress,
+                  decoration:
+                      InputDecoration(
+                        labelText: "University Provided Email",
+                        hintText: "Ex: F2300067 or fatema.akbar",
+                        border: const OutlineInputBorder(),
+                        suffixText: "@aubh.edu.bh",
+                        suffixStyle: const TextStyle(color: AppColors.black),
+                        // show email errors
+                        errorText: _hasAtChar
+                            ? 'Pwease use a university pwovided email'
+                            : (_emailEmptyError
+                                  ? 'Thwis cwan nwot bwe emptwy uwu'
+                                  : null),
+                      ).copyWith(
+                        focusedBorder: OutlineInputBorder(
+                          borderSide: BorderSide(
+                            color: _hasAtChar ? AppColors.red : AppColors.brown,
+                          ),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderSide: BorderSide(
+                            color: _hasAtChar
+                                ? AppColors.red
+                                : AppColors.lightGrey,
+                          ),
+                        ),
+                        floatingLabelStyle: const TextStyle(
+                          color: AppColors.brown,
+                        ),
+                      ),
+                ),
+                const SizedBox(height: 15),
+                TextField(
+                  focusNode: _phoneFocus,
+                  controller: phone,
+                  cursorColor: AppColors.brown,
+                  keyboardType: TextInputType.number,
+                  inputFormatters: [
+                    FilteringTextInputFormatter.digitsOnly,
+                    LengthLimitingTextInputFormatter(8),
+                  ],
+                  decoration:
+                      InputDecoration(
+                        labelText: "Phone #",
+                        prefixText: "973",
+                        prefixStyle: const TextStyle(color: AppColors.black),
+                        border: const OutlineInputBorder(),
+                        errorText: _phoneFormatError
+                            ? 'Enter exactly 8 digits after 973'
+                            : (_phoneError
+                                  ? 'Thwis cwan nwot bwe emptwy uwu'
+                                  : null),
+                      ).copyWith(
+                        focusedBorder: OutlineInputBorder(
+                          borderSide: BorderSide(
+                            color: _phoneFormatError
+                                ? AppColors.red
+                                : AppColors.brown,
+                          ),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderSide: BorderSide(
+                            color: _phoneFormatError
+                                ? AppColors.red
+                                : AppColors.lightGrey,
+                          ),
+                        ),
+                        floatingLabelStyle: const TextStyle(
+                          color: AppColors.brown,
+                        ),
+                      ),
+                ),
+                const SizedBox(height: 15),
+                TextField(
+                  focusNode: _passFocus,
+                  controller: pass,
+                  obscureText: true,
+                  cursorColor: AppColors.brown,
+                  decoration:
+                      InputDecoration(
+                        labelText: "Password",
+                        border: const OutlineInputBorder(),
+                        errorText: _passError
+                            ? 'Thwis cwan nwot bwe emptwy uwu'
+                            : null,
+                      ).copyWith(
+                        focusedBorder: const OutlineInputBorder(
+                          borderSide: BorderSide(color: AppColors.brown),
+                        ),
+                        enabledBorder: const OutlineInputBorder(
+                          borderSide: BorderSide(color: AppColors.lightGrey),
+                        ),
+                        floatingLabelStyle: const TextStyle(
+                          color: AppColors.brown,
+                        ),
+                      ),
+                ),
+                const SizedBox(height: 20),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primaryGreen,
+                    fixedSize: const Size(350, 50),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 48,
+                      vertical: 14,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                  onPressed: disableButton ? null : register,
+                  child: loading
+                      ? const CircularProgressIndicator(color: Colors.white)
+                      : const Text("Step into TreeWayz", style: AppText.button),
+                ),
+              ],
+            ),
+          ),
+        ),
+        // Pin the create-account button to the bottom
+        bottomNavigationBar: SafeArea(
+          minimum: const EdgeInsets.only(left: 20, right: 20, bottom: 12),
+          child: TextButton(
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const SigninScreen()),
+              );
+            },
+            child: const Text(
+              "Already a member? Click here to sign in<3",
+              style: AppText.small,
+            ),
           ),
         ),
       ),
-      // Pin the create-account button to the bottom
-      bottomNavigationBar: SafeArea(
-        minimum: const EdgeInsets.only(left: 20, right: 20, bottom: 12),
-        child: TextButton(
-          onPressed: () {
-            Navigator.push(context, MaterialPageRoute(builder: (_) => const SigninScreen()));
-          },
-          child: const Text(
-            "Already a member? Click here to sign in<3",
-            style: AppText.small,
-          ),
-        ),
-      ),
-    )
     );
   }
 }
