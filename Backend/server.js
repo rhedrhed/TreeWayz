@@ -49,8 +49,8 @@ app.use("/rides", rideRoutes);
 
 // Start server - bind to 0.0.0.0 to accept connections from network
 app.listen(PORT, '0.0.0.0', () => {
-  console.log(`\n🚀 Server running on port ${PORT}`);
-  console.log(`📱 Local: http://localhost:${PORT}`);
-  console.log(`🌐 Network: http://192.168.8.101:${PORT}`);
-  console.log(`✅ Ready for connections\n`);
+  console.log(`\nServer running on port ${PORT}`);
+  console.log(`Local: http://localhost:${PORT}`);
+  console.log(`Network: http://192.168.8.101:${PORT}`);
+  console.log(`Ready for connections\n`);
 });
