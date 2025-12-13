@@ -7,11 +7,12 @@ const router = express.Router();
 
 // Predefined allowed destinations
 const validDestinations = [
-    "Manama",
-    "Riffa",
-    "Muharraq",
-    "Isa Town",
-    "American University of Bahrain",
+    "AUBH",
+    "Juffair",
+    "Busaiteen",
+    "Aali",
+    "KU",
+    "Polytechnic"
 ];
 
 // Helps to convert hour/minute/AMPM to 24-hour Date object
@@ -54,13 +55,11 @@ router.post("/postRide", authenticateToken, async (req, res) => {
             minute == null ||
             !ampm ||
             !available_seats ||
-            (!total_fare && !fare_per_seat) ||
             !payment_method
         ) {
             return res.status(400).json({
                 success: false,
-                message:
-                    "All fields are required. Either total_fare or fare_per_seat must be provided.",
+                message: "All fields are required (pickup, destination, time, seats, payment method).",
             });
         }
 
@@ -98,23 +97,29 @@ router.post("/postRide", authenticateToken, async (req, res) => {
             });
         }
 
-        // Calculate fare per seat
-        const finalFarePerSeat = fare_per_seat
-            ? parseFloat(fare_per_seat).toFixed(3)
-            : parseFloat(total_fare / available_seats).toFixed(3);
-
-        if (finalFarePerSeat <= 0) {
-            return res.status(400).json({
-                success: false,
-                message: "Fare per seat must be greater than 0.",
-            });
-        }
-
         // Auto-fill coordinates from predefined locations
         const finalPickupLat = predefinedLocations[pickup_point].lat;
         const finalPickupLng = predefinedLocations[pickup_point].lng;
         const finalDestinationLat = predefinedLocations[destination_point].lat;
         const finalDestinationLng = predefinedLocations[destination_point].lng;
+
+        // Calculate distance using Haversine formula
+        const R = 6371; // Earth's radius in km
+        const dLat = (finalDestinationLat - finalPickupLat) * Math.PI / 180;
+        const dLng = (finalDestinationLng - finalPickupLng) * Math.PI / 180;
+        const a =
+            Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+            Math.cos(finalPickupLat * Math.PI / 180) *
+            Math.cos(finalDestinationLat * Math.PI / 180) *
+            Math.sin(dLng / 2) * Math.sin(dLng / 2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        const distanceKm = R * c;
+
+        // Calculate fare: 0.20 BHD per km, minimum 0.50 BHD
+        const RATE_PER_KM = 0.20;
+        const MIN_FARE = 0.50;
+        const totalFare = Math.max(distanceKm * RATE_PER_KM, MIN_FARE);
+        const finalFarePerSeat = (totalFare / available_seats).toFixed(3);
 
         // Insert new ride into database
         const result = await pool.query(
@@ -123,7 +128,7 @@ router.post("/postRide", authenticateToken, async (req, res) => {
                 destination, destination_lat, destination_lng,
                 departure_time, available_seats, price, payment_method, status
             )
-            VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,'open')
+            VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,'pending')
             RETURNING ride_id, origin, destination, departure_time,
                       available_seats, price, payment_method, status`,
             [
@@ -176,7 +181,7 @@ router.get("/searchRides", authenticateToken, async (req, res) => {
                    u.first_name, u.last_name, u.phone
             FROM Rides r
             JOIN Users u ON r.driver_id = u.user_id
-            WHERE r.status = 'open'
+            WHERE r.status = 'pending'
               AND LOWER(r.destination) = LOWER($1)
               AND LOWER(r.origin) = LOWER($2)
               AND r.available_seats >= $3
@@ -234,7 +239,7 @@ router.get("/searchNearbyRides", authenticateToken, async (req, res) => {
                        )) AS distance_km
                 FROM Rides r
                 JOIN Users u ON r.driver_id = u.user_id
-                WHERE r.status = 'open'
+                WHERE r.status = 'pending'
                   AND r.available_seats >= $3
                   AND r.origin_lat IS NOT NULL
                   AND r.origin_lng IS NOT NULL
@@ -263,7 +268,7 @@ router.get("/myRide", authenticateToken, async (req, res) => {
         const driverId = req.user.user_id;
 
         const result = await pool.query(
-            `SELECT * FROM Rides WHERE driver_id=$1 AND status IN ('open','booked','ongoing') ORDER BY created_at DESC LIMIT 1`,
+            `SELECT * FROM Rides WHERE driver_id=$1 AND status IN ('pending','booked','accepted') ORDER BY created_at DESC LIMIT 1`,
             [driverId]
         );
 
@@ -294,6 +299,38 @@ router.get("/myRide", authenticateToken, async (req, res) => {
 });
 
 
+// Get accepted riders for a ride (for rating)
+router.get("/acceptedRiders/:rideId", authenticateToken, async (req, res) => {
+    try {
+        const { rideId } = req.params;
+        const driverId = req.user.user_id;
+
+        // Verify ride belongs to driver
+        const rideRes = await pool.query(`SELECT driver_id FROM Rides WHERE ride_id=$1`, [rideId]);
+        if (!rideRes.rows.length) return res.status(404).json({ success: false, message: "Ride not found." });
+        if (rideRes.rows[0].driver_id !== driverId) {
+            return res.status(403).json({ success: false, message: "Not your ride." });
+        }
+
+        // Get accepted riders
+        const riders = await pool.query(
+            `SELECT b.rider_id, b.seats, u.first_name, u.last_name, u.phone, u.rider_rating
+             FROM Bookings b
+             JOIN Users u ON b.rider_id = u.user_id
+             WHERE b.ride_id=$1 AND b.status='accepted'`,
+            [rideId]
+        );
+
+        res.json({
+            success: true,
+            riders: riders.rows
+        });
+    } catch (error) {
+        console.error("Get accepted riders error:", error);
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
 //Driver begins drive (ongoing)
 router.patch("/beginDrive/:rideId", authenticateToken, async (req, res) => {
     try {
@@ -307,7 +344,7 @@ router.patch("/beginDrive/:rideId", authenticateToken, async (req, res) => {
             return res.status(403).json({ success: false, message: "You are not allowed to start this ride." });
         }
 
-        await pool.query(`UPDATE Rides SET status='ongoing' WHERE ride_id=$1`, [rideId]);
+        await pool.query(`UPDATE Rides SET status='accepted' WHERE ride_id=$1`, [rideId]);
         res.json({ success: true, message: "Drive started." });
     } catch (error) {
         console.error("Begin drive error:", error);
@@ -317,23 +354,51 @@ router.patch("/beginDrive/:rideId", authenticateToken, async (req, res) => {
 
 //Cancel ride (Driver) - soft delete
 router.patch("/cancel/:rideId", authenticateToken, async (req, res) => {
+    const client = await pool.connect();
     try {
         const { rideId } = req.params;
         const driverId = req.user.user_id;
 
+        await client.query('BEGIN');
+
         // Verify ride belongs to driver
-        const rideRes = await pool.query(`SELECT driver_id FROM Rides WHERE ride_id=$1`, [rideId]);
-        if (!rideRes.rows.length) return res.status(404).json({ success: false, message: "Ride not found." });
+        const rideRes = await client.query(`SELECT driver_id, status FROM Rides WHERE ride_id=$1`, [rideId]);
+        if (!rideRes.rows.length) {
+            await client.query('ROLLBACK');
+            return res.status(404).json({ success: false, message: "Ride not found." });
+        }
         if (rideRes.rows[0].driver_id !== driverId) {
+            await client.query('ROLLBACK');
             return res.status(403).json({ success: false, message: "You are not allowed to cancel this ride." });
         }
 
-        // Soft delete
-        await pool.query(`UPDATE Rides SET status='cancelled' WHERE ride_id=$1`, [rideId]);
-        res.json({ success: true, message: "Ride cancelled." });
+        // Check if ride is already completed or cancelled
+        if (rideRes.rows[0].status === 'completed') {
+            await client.query('ROLLBACK');
+            return res.status(400).json({ success: false, message: "Cannot cancel a completed ride." });
+        }
+        if (rideRes.rows[0].status === 'cancelled') {
+            await client.query('ROLLBACK');
+            return res.status(400).json({ success: false, message: "Ride is already cancelled." });
+        }
+
+        // Reject all pending bookings for this ride
+        await client.query(
+            `UPDATE Bookings SET status='rejected' WHERE ride_id=$1 AND status='pending'`,
+            [rideId]
+        );
+
+        // Cancel the ride
+        await client.query(`UPDATE Rides SET status='cancelled' WHERE ride_id=$1`, [rideId]);
+
+        await client.query('COMMIT');
+        res.json({ success: true, message: "Ride cancelled successfully." });
     } catch (error) {
+        await client.query('ROLLBACK');
         console.error("Cancel ride error:", error);
         res.status(500).json({ success: false, error: error.message });
+    } finally {
+        client.release();
     }
 });
 
@@ -348,7 +413,7 @@ router.post("/requestRide", authenticateToken, async (req, res) => {
         }
 
         // Prevent driver from booking their own ride
-        const rideRes = await pool.query(`SELECT driver_id, available_seats FROM Rides WHERE ride_id=$1 AND status='open'`, [ride_id]);
+        const rideRes = await pool.query(`SELECT driver_id, available_seats FROM Rides WHERE ride_id=$1 AND status='pending'`, [ride_id]);
         if (!rideRes.rows.length) return res.status(404).json({ success: false, message: "Ride not found." });
         if (rideRes.rows[0].driver_id === riderId) {
             return res.status(400).json({ success: false, message: "Drivers cannot book their own ride." });
@@ -415,17 +480,18 @@ router.patch("/acceptRequest/:bookingId", authenticateToken, async (req, res) =>
             [booking.ride_id, booking.seats]
         );
 
-        // Hide ride if no seats left
-        if (updatedRideRes.rows[0].available_seats <= 0) {
-            await client.query(`UPDATE Rides SET status='booked' WHERE ride_id=$1`, [booking.ride_id]);
-        }
+        // Change ride status to 'booked' after accepting at least one rider
+        // This allows the driver to start the drive
+        await client.query(`UPDATE Rides SET status='booked' WHERE ride_id=$1`, [booking.ride_id]);
         // Get ride price and payment method
         const rideInfo = await client.query(
             `SELECT price, payment_method FROM Rides WHERE ride_id=$1`,
             [booking.ride_id]
         );
 
-        const totalPayment = rideInfo.rows[0].price * booking.seats;
+        const pricePerSeat = parseFloat(rideInfo.rows[0].price);
+        const totalPayment = pricePerSeat * booking.seats;
+
         await client.query(
             `INSERT INTO Payments (booking_id, amount, method)
      VALUES ($1, $2, $3)`,
@@ -487,11 +553,11 @@ router.patch("/endDrive/:rideId", authenticateToken, async (req, res) => {
         if (ride.driver_id !== driverId)
             return res.status(403).json({ success: false, message: "You cannot end this ride." });
 
-        if (ride.status !== "ongoing")
-            return res.status(400).json({ success: false, message: "Ride is not ongoing." });
+        if (ride.status !== "accepted")
+            return res.status(400).json({ success: false, message: "Ride is not in progress." });
 
-        // Mark ride as done
-        await pool.query(`UPDATE Rides SET status='done' WHERE ride_id=$1`, [rideId]);
+        // Mark ride as completed
+        await pool.query(`UPDATE Rides SET status='completed' WHERE ride_id=$1`, [rideId]);
         res.json({ success: true, message: "Drive ended successfully." });
     } catch (error) {
         console.error("End drive error:", error);

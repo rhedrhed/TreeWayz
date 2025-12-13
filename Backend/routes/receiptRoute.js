@@ -25,22 +25,29 @@ router.get("/api/receipts", authenticateToken, async (req, res) => {
       JOIN Payments p ON b.booking_id = p.booking_id
       JOIN Users d ON r.driver_id = d.user_id
       WHERE (b.rider_id = $1 OR r.driver_id = $1)
-        AND r.status = 'done'
+        AND r.status = 'completed'
+        AND b.status = 'accepted'
       ORDER BY p.created_at DESC
     `;
 
     const result = await pool.query(query, [userId]);
 
+    // Calculate total amount
+    const totalAmount = result.rows.reduce((sum, row) => {
+      return sum + parseFloat(row.amount || 0);
+    }, 0);
+
     res.json({
       success: true,
       total_receipts: result.rows.length,
+      total_amount: parseFloat(totalAmount.toFixed(3)), // Format to 3 decimal places for BHD
       receipts: result.rows.map((row) => ({
         booking_id: row.booking_id,
         driver_name: row.driver_name,
         origin: row.origin,
         destination: row.destination,
         departure_time: row.departure_time,
-        amount: row.amount,
+        amount: parseFloat(parseFloat(row.amount).toFixed(3)), // Ensure proper decimal formatting
         method: row.method,
         payment_date: row.payment_date,
         invoice_url: `/api/receipts/${row.booking_id}/invoice`,
@@ -65,7 +72,6 @@ router.get("/api/receipts/:booking_id/invoice", authenticateToken, async (req, r
         r.origin,
         r.destination,
         r.departure_time,
-        r.price,
         p.amount,
         p.method,
         p.created_at AS payment_date,
@@ -78,7 +84,7 @@ router.get("/api/receipts/:booking_id/invoice", authenticateToken, async (req, r
       JOIN Users u ON b.rider_id = u.user_id
       WHERE b.booking_id = $1 
         AND (b.rider_id = $2 OR r.driver_id = $2)
-        AND r.status = 'done'
+        AND r.status = 'completed'
     `;
 
     const result = await pool.query(query, [booking_id, userId]);
@@ -104,7 +110,7 @@ router.get("/api/receipts/:booking_id/invoice", authenticateToken, async (req, r
     doc.text(`Payment Method: ${data.method}`);
     doc.text(`Payment Date: ${new Date(data.payment_date).toLocaleString()}`);
     doc.moveDown();
-    doc.fontSize(14).text(`Amount Paid: ${data.amount} BD`, { align: "right" });
+    doc.fontSize(14).text(`Amount Paid: ${data.amount} BHD`, { align: "right" });
     doc.moveDown(2);
     doc.fontSize(10).text("Thank you for riding with TreeWayz!", { align: "center" });
 
