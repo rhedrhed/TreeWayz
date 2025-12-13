@@ -31,7 +31,7 @@ function getLocalIPAddress() {
         c.name.toLowerCase().includes('wireless')
     );
     if (wifiAdapter) {
-        console.log(`📡 Using WiFi adapter: ${wifiAdapter.name}`);
+        console.log(`Using WiFi adapter: ${wifiAdapter.name}`);
         return wifiAdapter.address;
     }
 
@@ -41,7 +41,7 @@ function getLocalIPAddress() {
         c.name.toLowerCase().includes('eth')
     );
     if (ethernetAdapter) {
-        console.log(`🔌 Using Ethernet adapter: ${ethernetAdapter.name}`);
+        console.log(` Using Ethernet adapter: ${ethernetAdapter.name}`);
         return ethernetAdapter.address;
     }
 
@@ -144,7 +144,7 @@ function main() {
         console.log('   2. Make sure your phone and computer are on the same WiFi');
         console.log(`   3. Your backend is accessible at: http://${ipAddress}:${port}`);
     } else {
-        console.log('\n⚠️  Some configurations could not be updated.');
+        console.log('\nSome configurations could not be updated.');
         console.log('   Please check the error messages above.');
     }
 }
