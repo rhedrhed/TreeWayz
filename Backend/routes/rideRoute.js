@@ -181,7 +181,7 @@ router.get("/searchRides", authenticateToken, async (req, res) => {
                    u.first_name, u.last_name, u.phone
             FROM Rides r
             JOIN Users u ON r.driver_id = u.user_id
-            WHERE r.status = 'pending'
+            WHERE r.status IN ('pending', 'booked')
               AND LOWER(r.destination) = LOWER($1)
               AND LOWER(r.origin) = LOWER($2)
               AND r.available_seats >= $3
@@ -239,7 +239,7 @@ router.get("/searchNearbyRides", authenticateToken, async (req, res) => {
                        )) AS distance_km
                 FROM Rides r
                 JOIN Users u ON r.driver_id = u.user_id
-                WHERE r.status = 'pending'
+                WHERE r.status IN ('pending', 'booked')
                   AND r.available_seats >= $3
                   AND r.origin_lat IS NOT NULL
                   AND r.origin_lng IS NOT NULL
@@ -413,8 +413,13 @@ router.post("/requestRide", authenticateToken, async (req, res) => {
         }
 
         // Prevent driver from booking their own ride
-        const rideRes = await pool.query(`SELECT driver_id, available_seats FROM Rides WHERE ride_id=$1 AND status='pending'`, [ride_id]);
-        if (!rideRes.rows.length) return res.status(404).json({ success: false, message: "Ride not found." });
+        // Allow requests for rides that are 'pending' or 'booked' (but not 'accepted' or 'completed')
+        const rideRes = await pool.query(
+            `SELECT driver_id, available_seats, status FROM Rides 
+             WHERE ride_id=$1 AND status IN ('pending', 'booked')`,
+            [ride_id]
+        );
+        if (!rideRes.rows.length) return res.status(404).json({ success: false, message: "Ride not found or no longer accepting requests." });
         if (rideRes.rows[0].driver_id === riderId) {
             return res.status(400).json({ success: false, message: "Drivers cannot book their own ride." });
         }
