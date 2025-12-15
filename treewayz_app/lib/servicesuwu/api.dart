@@ -7,12 +7,34 @@ class Api {
   // Android Emulator: "http://10.0.2.2:3000"
   // iOS Simulator: "http://localhost:3000"
   // Physical Device: "http://YOUR_COMPUTER_IP:3000"
-  static const String baseUrl = "http://192.168.8.101:3000";
+  static const String baseUrl = "http://10.27.36.55:3000";
 
   // Get stored token
   static Future<String?> _getToken() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getString('token');
+  }
+
+  // Handle token expiration (401/403 errors)
+  static Future<Map<String, dynamic>> _handleTokenExpiration(
+    http.Response response,
+  ) async {
+    if (response.statusCode == 401 || response.statusCode == 403) {
+      // Clear the expired token
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove('token');
+
+      print('⚠️ Token expired or invalid - cleared from storage');
+
+      return {
+        'success': false,
+        'tokenExpired': true,
+        'message': 'Your session has expired. Please log in again.',
+      };
+    }
+
+    // Not a token expiration error, return null
+    return {};
   }
 
   // GET request
@@ -35,6 +57,12 @@ class Api {
 
       print('GET Response Status: ${response.statusCode}');
       print('GET Response Body: ${response.body}');
+
+      // Check for token expiration first
+      final tokenExpiredResponse = await _handleTokenExpiration(response);
+      if (tokenExpiredResponse.isNotEmpty) {
+        return tokenExpiredResponse;
+      }
 
       if (response.statusCode == 200) {
         return jsonDecode(response.body);
@@ -74,6 +102,12 @@ class Api {
       print('POST Response Status: ${response.statusCode}');
       print('POST Response Body: ${response.body}');
 
+      // Check for token expiration first
+      final tokenExpiredResponse = await _handleTokenExpiration(response);
+      if (tokenExpiredResponse.isNotEmpty) {
+        return tokenExpiredResponse;
+      }
+
       if (response.statusCode == 200 || response.statusCode == 201) {
         return jsonDecode(response.body);
       } else {
@@ -111,6 +145,12 @@ class Api {
 
       print('PATCH Response Status: ${response.statusCode}');
       print('PATCH Response Body: ${response.body}');
+
+      // Check for token expiration first
+      final tokenExpiredResponse = await _handleTokenExpiration(response);
+      if (tokenExpiredResponse.isNotEmpty) {
+        return tokenExpiredResponse;
+      }
 
       // Return decoded response for both success and error cases
       if (response.statusCode == 200 || response.statusCode == 201) {
@@ -155,6 +195,12 @@ class Api {
 
       print('DELETE Response Status: ${response.statusCode}');
       print('DELETE Response Body: ${response.body}');
+
+      // Check for token expiration first
+      final tokenExpiredResponse = await _handleTokenExpiration(response);
+      if (tokenExpiredResponse.isNotEmpty) {
+        return tokenExpiredResponse;
+      }
 
       if (response.statusCode == 200) {
         return jsonDecode(response.body);

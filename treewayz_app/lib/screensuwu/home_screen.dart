@@ -8,6 +8,7 @@ import '../themeuwu/app_colors.dart';
 import '../screensuwu/logout_screen.dart'; // added import
 import '../screensuwu/driver_ride_management_screen.dart';
 import '../screensuwu/ratedriver_screen.dart';
+import '../screensuwu/welcome_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -46,6 +47,25 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   Future<void> _loadUserInfo() async {
     final res = await Api.get("/home");
 
+    // Check for token expiration
+    if (res != null && res["tokenExpired"] == true) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              res["message"] ?? "Session expired. Please log in again.",
+            ),
+            duration: const Duration(seconds: 3),
+          ),
+        );
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const WelcomeScreen()),
+        );
+      }
+      return;
+    }
+
     if (res != null && res["success"] == true) {
       if (mounted) {
         setState(() {
@@ -61,6 +81,25 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     if (res == null) {
       if (mounted) {
         setState(() => ongoingStatus = "No active rides.");
+      }
+      return;
+    }
+
+    // Check for token expiration
+    if (res["tokenExpired"] == true) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              res["message"] ?? "Session expired. Please log in again.",
+            ),
+            duration: const Duration(seconds: 3),
+          ),
+        );
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const WelcomeScreen()),
+        );
       }
       return;
     }
