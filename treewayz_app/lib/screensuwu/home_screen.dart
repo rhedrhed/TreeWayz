@@ -47,7 +47,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   Future<void> _loadUserInfo() async {
     final res = await Api.get("/home");
 
-    // Check for token expiration
+    // Check for token expiration and redirect to login screen
     if (res != null && res["tokenExpired"] == true) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

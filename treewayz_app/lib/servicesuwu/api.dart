@@ -15,7 +15,7 @@ class Api {
     return prefs.getString('token');
   }
 
-  // Handle token expiration (401/403 errors)
+  // Handle token expiration and redirect to login screen (401/403 errors)
   static Future<Map<String, dynamic>> _handleTokenExpiration(
     http.Response response,
   ) async {
