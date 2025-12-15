@@ -256,7 +256,7 @@ Follow these steps to find and book a ride:
 2. **Tap "Cancel Ride"** button at the bottom
 3. **Confirm cancellation** - all pending requests are automatically rejected
 
-**Note:** You can cancel anytime before completion, even with accepted passengers.
+**Note:** You can cancel anytime before starting the drive, even with accepted passengers.
 
 ---
 
